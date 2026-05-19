@@ -1,0 +1,58 @@
+<form class="custom-form" data-form-type="service">
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text" name="name" class="form-control" placeholder="Vorname" required>
+        </div>
+        <div class="col-md-6">
+            <input type="text" name="lastname" class="form-control" placeholder="Nachname" required>
+        </div>
+    </div>
+
+    <input type="email" name="email" class="form-control mb-4" placeholder="Email" required>
+
+    <label class="form-label fw-bold mb-3">Welche Services interessieren Sie?</label>
+
+    <div class="services-grid mb-4">
+        <div class="service-card">
+            <input type="checkbox" name="services" value="floor" id="service-floor" class="service-checkbox">
+            <label for="service-floor">
+                <i class="bi bi-brush-all"></i>
+                <div class="service-name">Bodenreinigung</div>
+                <small>Professionelle Bodenbearbeitung</small>
+            </label>
+        </div>
+
+        <div class="service-card">
+            <input type="checkbox" name="services" value="windows" id="service-windows" class="service-checkbox">
+            <label for="service-windows">
+                <i class="bi bi-border-all"></i>
+                <div class="service-name">Fensterreinigung</div>
+                <small>Streifenfreie saubere Fenster</small>
+            </label>
+        </div>
+
+        <div class="service-card">
+            <input type="checkbox" name="services" value="deep" id="service-deep" class="service-checkbox">
+            <label for="service-deep">
+                <i class="bi bi-stars"></i>
+                <div class="service-name">Tiefenreinigung</div>
+                <small>Umfassende gründliche Reinigung</small>
+            </label>
+        </div>
+    </div>
+
+    <textarea name="details" class="form-control mb-3" rows="4"
+        placeholder="Zusätzliche Anforderungen (optional)"></textarea>
+
+    <div class="form-feedback mb-3"></div>
+
+    <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+        Kostenlose Anfrage stellen
+    </button>
+
+    <small class="d-block text-center text-muted mt-3">
+        ✓ Kostenlos • ✓ Unverbindlich • ✓ Innerhalb 24h Rückmeldung
+    </small>
+
+</form>

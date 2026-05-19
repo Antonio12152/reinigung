@@ -1,0 +1,223 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --section-bg: #f8f9fa;
+}
+
+.dark-theme {
+    --bg-color: #121212;
+    --text-color: #f8f9fa;
+    --card-bg: #1e1e1e;
+    --section-bg: #181818;
+}
+
+html,
+body {
+
+    height: 100%;
+}
+
+/* BODY */
+
+body {
+    display: flex;
+
+    flex-direction: column;
+
+    min-height: 100vh;
+
+    background-color: var(--bg-color);
+    color: var(--text-color);
+
+    transition: 0.4s;
+}
+
+/* HERO */
+
+.hero-section {
+    height: 500px;
+
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.6),
+            rgba(0, 0, 0, 0.6)),
+        url("../img/window.jpg");
+
+    background-size: cover;
+    background-position: center;
+}
+
+/* CARDS */
+
+.card {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+
+    transition: 0.4s;
+}
+
+.card img {
+    height: 250px;
+    object-fit: cover;
+}
+
+/* PRICING */
+
+.pricing-card {
+    border-radius: 20px;
+
+    transition: 0.3s;
+}
+
+.pricing-card:hover {
+    transform: translateY(-10px);
+}
+
+.featured-card {
+    transform: scale(1.05);
+}
+
+.pricing-icon {
+    font-size: 3rem;
+    color: #0d6efd;
+}
+.page-wrapper {
+    flex: 1;
+}
+main {
+
+    flex: 1;
+}
+/* FOOTER */
+
+footer {
+    background-color: #111;
+}
+
+/* ANIMATIONS */
+
+section {
+    animation: fadeInUp 1s ease;
+}
+
+@keyframes fadeInUp {
+
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* COOKIE BANNER */
+
+.cookie-banner {
+
+    position: fixed;
+
+    bottom: 20px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: 90%;
+    max-width: 900px;
+
+    background: rgba(20, 20, 20, 0.95);
+
+    color: white;
+
+    padding: 20px;
+
+    border-radius: 20px;
+
+    z-index: 9999;
+
+    display: none;
+}
+
+.cookie-content {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+}
+
+.cookie-buttons {
+
+    display: flex;
+
+    gap: 10px;
+}
+
+@media(max-width:768px) {
+
+    .cookie-content {
+
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* PRICING */
+
+.pricing-main-card {
+
+    border-radius: 25px;
+}
+
+.pricing-main-card .list-group-item {
+
+    border: none;
+
+    padding: 15px 0;
+
+    background: transparent;
+}
+
+/* form */
+
+.services-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.form-check:hover {
+    border-color: #007bff;
+    background: #f0f7ff;
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.form-check-label {
+    margin-bottom: 0;
+    cursor: pointer;
+    flex: 1;
+}
