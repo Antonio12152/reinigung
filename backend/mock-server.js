@@ -4,9 +4,9 @@ const http = require('http');
 const url = require('url');
 
 const bookedSlots = {
-    '2026-05-20': [12, 15],  
-    '2026-05-21': [10, 14],
-    '2026-05-22': [9, 16], 
+    '2026-05-20': [12, 13, 14, 15],
+    '2026-05-21': [10, 11, 12, 13, 14],
+    '2026-05-22': [9, 10, 11, 12, 13, 14, 15, 16],
 };
 
 const bookings = [];
@@ -49,7 +49,7 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const booking = JSON.parse(body);
-                
+
                 if (!booking.name || !booking.email || !booking.services.length) {
                     res.writeHead(400);
                     res.end(JSON.stringify({
@@ -61,7 +61,7 @@ const server = http.createServer((req, res) => {
 
                 const key = booking.date;
                 const bookedHours = bookedSlots[key] || [];
-                
+
                 if (bookedHours.includes(booking.timeFrom) || bookedHours.includes(booking.timeTo - 1)) {
                     res.writeHead(409);
                     res.end(JSON.stringify({

@@ -1,3 +1,5 @@
+'use strict';
+
 let currentDate = new Date();
 let selectedDate = null;
 let selectedTimeFrom = null;
@@ -11,10 +13,24 @@ const MONTH_NAMES = [
 ];
 
 function renderCalendar() {
+    console.log('🔄 Rendering calendar...');
+
+    const calendarDays = document.getElementById('calendarDays');
+    const currentMonthEl = document.getElementById('currentMonth');
+
+    if (!calendarDays) {
+        console.error('❌ #calendarDays not found!');
+        return;
+    }
+    if (!currentMonthEl) {
+        console.error('❌ #currentMonth not found!');
+        return;
+    }
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    document.getElementById('currentMonth').textContent =
+    currentMonthEl.textContent =
         `${MONTH_NAMES[month]} ${year}`;
 
     const firstDay = new Date(year, month, 1);
@@ -25,7 +41,6 @@ function renderCalendar() {
     const lastDayDate = lastDay.getDate();
     const prevLastDayDate = prevLastDay.getDate();
 
-    const calendarDays = document.getElementById('calendarDays');
     calendarDays.innerHTML = '';
 
     for (let i = firstDayWeek - 1; i >= 0; i--) {
@@ -54,6 +69,8 @@ function renderCalendar() {
         const btn = createDayButton(day, 'other-month', true);
         calendarDays.appendChild(btn);
     }
+
+    console.log('✅ Calendar rendered successfully');
 }
 
 function createDayButton(day, type, isDisabled = false, isToday = false) {
@@ -80,7 +97,84 @@ function selectDate(date, btn) {
 
     renderTimeSlots();
 }
+function resetTimeSelection() {
 
+    selectedTimeFrom = null;
+
+    selectedTimeTo = null;
+
+    document
+        .querySelectorAll('.time-slot')
+        .forEach(slot => {
+
+            slot.classList.remove(
+                'selected',
+                'selected-to'
+            );
+
+            slot.style.opacity = '1';
+
+            slot.style.pointerEvents =
+                'auto';
+        });
+
+    document.getElementById(
+        'timeFromDisplay'
+    ).textContent = '--:--';
+
+    document.getElementById(
+        'timeToDisplay'
+    ).textContent = '--:--';
+
+    document.getElementById(
+        'durationInfo'
+    ).innerHTML = '';
+}
+function handleTimeSlotClick(
+    hour,
+    timeStr,
+    slot
+) {
+
+    // FIRST CLICK = FROM
+
+    if (selectedTimeFrom === null) {
+
+        selectTimeFrom(
+            hour,
+            timeStr,
+            slot
+        );
+
+        return;
+    }
+
+    // SECOND CLICK = TO
+
+    if (
+        selectedTimeTo === null &&
+        hour > selectedTimeFrom
+    ) {
+
+        selectTimeTo(
+            hour,
+            timeStr,
+            slot
+        );
+
+        return;
+    }
+
+    // RESET IF CLICK AGAIN
+
+    resetTimeSelection();
+
+    selectTimeFrom(
+        hour,
+        timeStr,
+        slot
+    );
+}
 async function renderTimeSlots() {
     const dateStr = selectedDate.toLocaleDateString('de-DE', {
         weekday: 'long',
@@ -98,10 +192,10 @@ async function renderTimeSlots() {
         if (response.ok) {
             const data = await response.json();
             window.bookedHours = data.bookedHours || [];
-            console.log(`📅 Booked hours on ${dateFormatted}:`, window.bookedHours);
+            console.log(`📅 Reserved time slot on ${dateFormatted}:`, window.bookedHours);
         }
     } catch (error) {
-        console.warn('⚠️ Can\'t load booked hours:', error.message);
+        console.warn('⚠️ Failed to load reserved hours:', error.message);
         window.bookedHours = [];
     }
 
@@ -119,21 +213,36 @@ async function renderTimeSlots() {
 }
 
 function createTimeSlot(hour, timeStr) {
+
     const slot = document.createElement('button');
+
     slot.type = 'button';
+
     slot.className = 'time-slot';
+
     slot.textContent = timeStr;
+
     slot.dataset.hour = hour;
 
-    const bookedHours = window.bookedHours || [];
+    const bookedHours =
+        window.bookedHours || [];
+
     if (bookedHours.includes(hour)) {
+
         slot.classList.add('booked');
+
         slot.disabled = true;
+
     } else {
-        slot.addEventListener('click', (e) => {
-            e.preventDefault();
-            selectTimeFrom(hour, timeStr, slot);
-        });
+
+        slot.addEventListener(
+            'click',
+            () => handleTimeSlotClick(
+                hour,
+                timeStr,
+                slot
+            )
+        );
     }
 
     return slot;
@@ -156,72 +265,134 @@ function selectTimeFrom(hour, timeStr, slot) {
 }
 
 function updateAvailableToTimes() {
-    document.querySelectorAll('.time-slot').forEach(slot => {
-        const hour = parseInt(slot.dataset.hour);
 
-        if (hour <= selectedTimeFrom) {
-            slot.style.opacity = '0.5';
-            slot.style.pointerEvents = 'none';
-        } else {
-            slot.style.opacity = '1';
-            slot.style.pointerEvents = 'auto';
+    document
+        .querySelectorAll('.time-slot')
+        .forEach(slot => {
 
-            slot.removeEventListener('click', selectTimeToHandler);
-            slot.addEventListener('click', selectTimeToHandler);
-        }
-    });
-}
+            const hour =
+                parseInt(
+                    slot.dataset.hour
+                );
 
-function selectTimeToHandler(e) {
-    e.preventDefault();
-    const hour = parseInt(this.dataset.hour);
-    const timeStr = this.textContent;
+            if (hour <= selectedTimeFrom) {
 
-    if (hour > selectedTimeFrom) {
-        selectedTimeTo = hour;
+                slot.style.opacity = '0.5';
 
-        document.querySelectorAll('.time-slot').forEach(slot => {
-            slot.classList.remove('selected');
-        });
+            } else {
 
-        this.classList.add('selected');
-
-        document.getElementById('timeToDisplay').textContent = timeStr;
-
-        const duration = selectedTimeTo - selectedTimeFrom;
-        document.getElementById('durationInfo').innerHTML =
-            `<strong>${duration} Stunde${duration > 1 ? 'n' : ''}</strong> ausgewählt`;
-
-        const bookingEvent = new CustomEvent('bookingTimeSelected', {
-            detail: {
-                date: selectedDate.toISOString().split('T')[0],
-                timeFrom: selectedTimeFrom,
-                timeTo: selectedTimeTo,
-                duration: duration
+                slot.style.opacity = '1';
             }
         });
-        document.dispatchEvent(bookingEvent);
+}
+
+function selectTimeTo(
+    hour,
+    timeStr,
+    slot
+) {
+
+    selectedTimeTo = hour;
+
+    document
+        .querySelectorAll('.time-slot')
+        .forEach(slot => {
+
+            slot.classList.remove(
+                'selected-to'
+            );
+        });
+
+    slot.classList.add(
+        'selected-to'
+    );
+
+    document.getElementById(
+        'timeToDisplay'
+    ).textContent = timeStr;
+
+    const duration =
+        selectedTimeTo -
+        selectedTimeFrom;
+
+    document.getElementById(
+        'durationInfo'
+    ).innerHTML = `
+
+        <strong>
+            ${duration}
+            Stunde${duration > 1 ? 'n' : ''}
+        </strong>
+
+        ausgewählt
+    `;
+
+    const bookingEvent =
+        new CustomEvent(
+            'bookingTimeSelected',
+            {
+                detail: {
+                    date:
+                        selectedDate
+                            .toISOString()
+                            .split('T')[0],
+
+                    timeFrom:
+                        selectedTimeFrom,
+
+                    timeTo:
+                        selectedTimeTo,
+
+                    duration
+                }
+            }
+        );
+
+    document.dispatchEvent(
+        bookingEvent
+    );
+}
+
+function setupCalendarNavigation() {
+    const prevBtn = document.getElementById('prevMonth');
+    const nextBtn = document.getElementById('nextMonth');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            selectedDate = null;
+            selectedTimeFrom = null;
+            selectedTimeTo = null;
+            document.getElementById('slotsContainer').style.display = 'none';
+            document.getElementById('placeholderMessage').style.display = 'block';
+            renderCalendar();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            selectedDate = null;
+            selectedTimeFrom = null;
+            selectedTimeTo = null;
+            document.getElementById('slotsContainer').style.display = 'none';
+            document.getElementById('placeholderMessage').style.display = 'block';
+            renderCalendar();
+        });
     }
 }
 
-document.getElementById('prevMonth').addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    selectedDate = null;
-    selectedTimeFrom = null;
-    selectedTimeTo = null;
-    document.getElementById('slotsContainer').style.display = 'none';
-    document.getElementById('placeholderMessage').style.display = 'block';
-    renderCalendar();
-});
+function initBooking() {
+    console.log('✅ Booking script loaded');
 
-document.getElementById('nextMonth').addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-    selectedDate = null;
-    selectedTimeFrom = null;
-    selectedTimeTo = null;
-    document.getElementById('slotsContainer').style.display = 'none';
-    document.getElementById('placeholderMessage').style.display = 'block';
-    renderCalendar();
-});
+    setTimeout(() => {
+        renderCalendar();
+        setupCalendarNavigation();
+    }, 100);
+}
 
-renderCalendar();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBooking);
+} else {
+    initBooking();
+}
