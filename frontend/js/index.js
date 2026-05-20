@@ -1,5 +1,6 @@
 'use strict';
 import { loadCookieBanner } from './cookie.js';
+import { initBooking } from './booking.js';
 const components = [
 
     {
@@ -20,7 +21,7 @@ const components = [
     {
         id: 'booking-calendar',
         path: 'components/booking-calendar.html',
-        callback: initBookingCalendar
+        callback: initBooking
     },
     {
         id: 'contact-form',

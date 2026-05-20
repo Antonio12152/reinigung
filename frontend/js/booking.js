@@ -4,6 +4,7 @@ let currentDate = new Date();
 let selectedDate = null;
 let selectedTimeFrom = null;
 let selectedTimeTo = null;
+let isLoadingSlots = false;
 
 const BUSINESS_HOURS_START = 9;
 const BUSINESS_HOURS_END = 18;
@@ -11,6 +12,64 @@ const MONTH_NAMES = [
     'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
     'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
 ];
+
+function setCalendarLoading(
+    isLoading
+) {
+
+    isLoadingSlots = isLoading;
+
+
+    document
+        .querySelectorAll('.day-btn')
+        .forEach(btn => {
+
+            btn.disabled = isLoading;
+        });
+
+
+    document
+        .querySelectorAll('.time-slot')
+        .forEach(slot => {
+
+            slot.disabled = isLoading;
+        });
+
+
+    const prevBtn =
+        document.getElementById(
+            'prevMonth'
+        );
+
+    const nextBtn =
+        document.getElementById(
+            'nextMonth'
+        );
+
+    if(prevBtn) {
+
+        prevBtn.disabled = isLoading;
+    }
+
+    if(nextBtn) {
+
+        nextBtn.disabled = isLoading;
+    }
+
+
+    const calendar =
+        document.getElementById(
+            'booking-calendar'
+        );
+
+    if(calendar) {
+
+        calendar.classList.toggle(
+            'calendar-loading',
+            isLoading
+        );
+    }
+}
 
 function renderCalendar() {
     console.log('🔄 Rendering calendar...');
@@ -49,6 +108,8 @@ function renderCalendar() {
     }
 
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     for (let day = 1; day <= lastDayDate; day++) {
         const date = new Date(year, month, day);
         const isToday = date.toDateString() === today.toDateString();
@@ -136,8 +197,6 @@ function handleTimeSlotClick(
     slot
 ) {
 
-    // FIRST CLICK = FROM
-
     if (selectedTimeFrom === null) {
 
         selectTimeFrom(
@@ -148,8 +207,6 @@ function handleTimeSlotClick(
 
         return;
     }
-
-    // SECOND CLICK = TO
 
     if (
         selectedTimeTo === null &&
@@ -164,8 +221,6 @@ function handleTimeSlotClick(
 
         return;
     }
-
-    // RESET IF CLICK AGAIN
 
     resetTimeSelection();
 
@@ -183,6 +238,10 @@ async function renderTimeSlots() {
         day: 'numeric'
     });
 
+    if (isLoadingSlots) return;
+
+    setCalendarLoading(true);
+
     document.getElementById('selectedDateDisplay').innerHTML =
         `<i class="bi bi-calendar-event"></i> <span>${dateStr}</span>`;
 
@@ -197,6 +256,8 @@ async function renderTimeSlots() {
     } catch (error) {
         console.warn('⚠️ Failed to load reserved hours:', error.message);
         window.bookedHours = [];
+    } finally {
+        setCalendarLoading(false);
     }
 
     const grid = document.getElementById('timeSlotsGrid');
@@ -210,6 +271,8 @@ async function renderTimeSlots() {
 
     document.getElementById('slotsContainer').style.display = 'block';
     document.getElementById('placeholderMessage').style.display = 'none';
+    resetTimeSelection();
+    setCalendarLoading(false);
 }
 
 function createTimeSlot(hour, timeStr) {
@@ -391,8 +454,11 @@ function initBooking() {
     }, 100);
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initBooking);
-} else {
-    initBooking();
-}
+// if (document.readyState === 'loading') {
+//     document.addEventListener('DOMContentLoaded', initBooking);
+// } else {
+//     initBooking();
+// }
+export {
+    initBooking
+};
