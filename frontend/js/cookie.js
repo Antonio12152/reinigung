@@ -1,5 +1,3 @@
-// js/cookie.js
-
 function initCookieBanner() {
     const cookieBanner = document.getElementById('cookie-banner');
     const acceptCookies = document.getElementById('acceptCookies');

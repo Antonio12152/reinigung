@@ -1,3 +1,85 @@
+<style>
+    .cookie-banner {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        max-width: 400px;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-lg);
+        z-index: 1000;
+        animation: slideUp 0.3s ease-out;
+        display: none;
+    }
+
+    .cookie-banner.show {
+        display: block;
+    }
+
+    .cookie-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .cookie-banner h5 {
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+        font-weight: 600;
+    }
+
+    .cookie-banner p {
+        color: var(--text-secondary);
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .cookie-buttons {
+        display: flex;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .cookie-buttons .btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        .cookie-banner {
+            max-width: calc(100vw - 40px);
+        }
+
+        .cookie-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .cookie-buttons {
+            width: 100%;
+        }
+
+        .cookie-buttons .btn {
+            flex: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
 <div id="cookie-banner" class="cookie-banner shadow">
 
     <div class="cookie-content">
@@ -13,11 +95,11 @@
 
         <div class="cookie-buttons">
 
-            <button id="acceptCookies" class="btn btn-primary">
+            <button id="acceptCookies" class="btn btn-primary" type="button">
                 Akzeptieren
             </button>
 
-            <button id="declineCookies" class="btn btn-outline-light">
+            <button id="declineCookies" class="btn btn-outline-light" type="button">
                 Ablehnen
             </button>
 

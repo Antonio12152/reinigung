@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../css/booking.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<div class="booking-container">
+    <!-- HEADER -->
+    <div class="booking-header">
+        <h1>Termin buchen</h1>
+        <p>Wählen Sie ein Datum und eine Uhrzeit</p>
+    </div>
+
+    <!-- BOOKING LAYOUT -->
+    <div class="booking-layout">
+        <!-- CALENDAR -->
+        <div class="calendar-section">
+            <div class="calendar-header">
+                <h3>Kalender</h3>
+                <div class="calendar-nav">
+                    <button id="prevMonth" title="Vorheriger Monat" type="button">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button id="nextMonth" title="Nächster Monat" type="button">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="currentMonth"></div>
+
+            <div class="calendar-weekdays">
+                <div class="weekday">Mo</div>
+                <div class="weekday">Di</div>
+                <div class="weekday">Mi</div>
+                <div class="weekday">Do</div>
+                <div class="weekday">Fr</div>
+                <div class="weekday">Sa</div>
+                <div class="weekday">So</div>
+            </div>
+
+            <div class="calendar-days" id="calendarDays"></div>
+        </div>
+
+        <!-- TIME SLOTS -->
+        <div class="time-slots-section">
+            <div class="time-slots-header">
+                <h3>Zeit wählen</h3>
+                <div class="selected-date" id="selectedDateDisplay">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Wählen Sie zuerst ein Datum</span>
+                </div>
+            </div>
+
+            <div id="slotsContainer" style="display: none;">
+                <div class="time-slots-grid" id="timeSlotsGrid"></div>
+
+                <div class="time-range-selector">
+                    <div class="time-range-label">Zeitraum</div>
+                    <div class="time-range-display">
+                        <div class="time-display" id="timeFromDisplay">--:--</div>
+                        <div class="time-range-arrow">→</div>
+                        <div class="time-display" id="timeToDisplay">--:--</div>
+                    </div>
+                    <div class="duration-info" id="durationInfo">Bitte wählen Sie eine Zeit</div>
+                </div>
+            </div>
+
+            <div class="placeholder-message" id="placeholderMessage">
+                <i class="bi bi-calendar-check"></i>
+                <p>Wählen Sie ein Datum aus dem Kalender</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../js/booking.js"></script>

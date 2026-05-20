@@ -16,14 +16,12 @@ async function handleFormSubmit(e) {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    // Валидация
     const errors = validateForm(formType, data);
     if (errors.length > 0) {
         showErrors(form, errors);
         return;
     }
 
-    // Отправка
     try {
         const response = await fetch(API_URL, {
             method: 'POST',

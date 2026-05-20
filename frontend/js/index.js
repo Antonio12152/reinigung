@@ -17,7 +17,11 @@ const components = [
         id: 'cookie-banner',
         path: 'components/cookie-banner.html'
     },
-
+    {
+        id: 'booking-calendar',
+        path: 'components/booking-calendar.html',
+        callback: initBookingCalendar
+    },
     {
         id: 'contact-form',
         path: 'components/contact-form.html'
@@ -28,10 +32,15 @@ const components = [
         path: 'components/service-form.html'
     }
 ];
-
+let bookingData = {
+    date: null,
+    timeFrom: null,
+    timeTo: null,
+    duration: null
+};
 function toggleTheme() {
     const themeToggle = document.getElementById('themeToggle');
-    const body = document.body;
+    const html = document.documentElement;
 
     if (!themeToggle) {
         console.error("Button #themeToggle not found in header.html!");
@@ -39,35 +48,56 @@ function toggleTheme() {
     }
 
     themeToggle.addEventListener('click', () => {
-        body.classList.toggle('dark-theme');
+        html.classList.toggle('dark-theme');
 
-        if (body.classList.contains('dark-theme')) {
+        if (html.classList.contains('dark-theme')) {
             themeToggle.innerHTML = '<i class="bi bi-sun-fill"></i>';
         } else {
             themeToggle.innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
         }
     });
 }
+function initBookingCalendar() {
+    document.addEventListener('bookingTimeSelected', (e) => {
+        bookingData = e.detail;
+        console.log('Время выбрано:', bookingData);
 
+        showServiceForm();
+    });
+}
+
+function showServiceForm() {
+    const serviceFormSection = document.getElementById('serviceFormSection');
+
+    if (serviceFormSection) {
+        serviceFormSection.classList.remove('hidden');
+        serviceFormSection.scrollIntoView({ behavior: 'smooth' });
+    }
+}
 async function loadComponent(id, path, callback = null) {
     try {
         const response = await fetch(path);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
 
         const html = await response.text();
         const element = document.getElementById(id);
 
         if (!element) {
-            console.warn(`#${id} not found. Don't worry, it's probably intentional.`);
+            console.warn(`#${id} not found`);
             return;
         }
 
-        element.innerHTML = html;
+        element.outerHTML = html;
 
-        if (callback) callback();
+        if (callback) {
+            callback();
+        }
 
     } catch (error) {
-        console.error(`Failed loading ${path}:`, error);
+        console.error(`Failed loading ${path}`, error);
     }
 }
 const init = async () => {
