@@ -60,7 +60,6 @@ function toggleTheme() {
 function initBookingCalendar() {
     document.addEventListener('bookingTimeSelected', (e) => {
         bookingData = e.detail;
-        console.log('Время выбрано:', bookingData);
 
         showServiceForm();
     });
@@ -90,7 +89,7 @@ async function loadComponent(id, path, callback = null) {
             return;
         }
 
-        element.outerHTML = html;
+        element.innerHTML = html;
 
         if (callback) {
             callback();
