@@ -13,61 +13,35 @@ const MONTH_NAMES = [
     'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
 ];
 
-function setCalendarLoading(
-    isLoading
-) {
-
+function setCalendarLoading(isLoading) {
     isLoadingSlots = isLoading;
-
 
     document
         .querySelectorAll('.day-btn')
         .forEach(btn => {
-
             btn.disabled = isLoading;
         });
-
 
     document
         .querySelectorAll('.time-slot')
         .forEach(slot => {
-
             slot.disabled = isLoading;
         });
 
+    const prevBtn = document.getElementById('prevMonth');
+    const nextBtn = document.getElementById('nextMonth');
 
-    const prevBtn =
-        document.getElementById(
-            'prevMonth'
-        );
-
-    const nextBtn =
-        document.getElementById(
-            'nextMonth'
-        );
-
-    if(prevBtn) {
-
+    if (prevBtn) {
         prevBtn.disabled = isLoading;
     }
 
-    if(nextBtn) {
-
+    if (nextBtn) {
         nextBtn.disabled = isLoading;
     }
 
-
-    const calendar =
-        document.getElementById(
-            'booking-calendar'
-        );
-
-    if(calendar) {
-
-        calendar.classList.toggle(
-            'calendar-loading',
-            isLoading
-        );
+    const calendar = document.getElementById('booking-calendar');
+    if (calendar) {
+        calendar.classList.toggle('calendar-loading', isLoading);
     }
 }
 
@@ -109,7 +83,7 @@ function renderCalendar() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     for (let day = 1; day <= lastDayDate; day++) {
         const date = new Date(year, month, day);
         const isToday = date.toDateString() === today.toDateString();
@@ -158,78 +132,75 @@ function selectDate(date, btn) {
 
     renderTimeSlots();
 }
+
 function resetTimeSelection() {
-
     selectedTimeFrom = null;
-
     selectedTimeTo = null;
 
     document
         .querySelectorAll('.time-slot')
         .forEach(slot => {
-
-            slot.classList.remove(
-                'selected',
-                'selected-to'
-            );
-
+            slot.classList.remove('selected', 'selected-to', 'disabled-between');
             slot.style.opacity = '1';
-
-            slot.style.pointerEvents =
-                'auto';
+            slot.style.pointerEvents = 'auto';
         });
 
-    document.getElementById(
-        'timeFromDisplay'
-    ).textContent = '--:--';
-
-    document.getElementById(
-        'timeToDisplay'
-    ).textContent = '--:--';
-
-    document.getElementById(
-        'durationInfo'
-    ).innerHTML = '';
+    document.getElementById('timeFromDisplay').textContent = '--:--';
+    document.getElementById('timeToDisplay').textContent = '--:--';
+    document.getElementById('durationInfo').innerHTML = '';
 }
-function handleTimeSlotClick(
-    hour,
-    timeStr,
-    slot
-) {
 
+function isTimeSlotBlocked(hour) {
+    const bookedHours = window.bookedHours || [];
+    return bookedHours.includes(hour);
+}
+
+function handleTimeSlotClick(hour, timeStr, slot) {
+    // Если это забронированный слот
+    if (isTimeSlotBlocked(hour)) {
+        return;
+    }
+
+    // Если время "от" не выбрано
     if (selectedTimeFrom === null) {
-
-        selectTimeFrom(
-            hour,
-            timeStr,
-            slot
-        );
-
+        selectTimeFrom(hour, timeStr, slot);
         return;
     }
 
-    if (
-        selectedTimeTo === null &&
-        hour > selectedTimeFrom
-    ) {
-
-        selectTimeTo(
-            hour,
-            timeStr,
-            slot
-        );
-
+    // Если время "от" уже выбрано и нажали на тот же слот
+    if (hour === selectedTimeFrom) {
+        resetTimeSelection();
         return;
     }
 
-    resetTimeSelection();
+    // Если время "до" не выбрано и час больше чем "от"
+    if (selectedTimeTo === null && hour > selectedTimeFrom) {
+        // Проверяем, нет ли заблокированного времени между selectedTimeFrom и hour
+        let hasBlockedHours = false;
+        for (let h = selectedTimeFrom + 1; h < hour; h++) {
+            if (isTimeSlotBlocked(h)) {
+                hasBlockedHours = true;
+                break;
+            }
+        }
 
-    selectTimeFrom(
-        hour,
-        timeStr,
-        slot
-    );
+        if (hasBlockedHours) {
+            showError('Zeitraum nicht verfügbar: Es gibt gebuchte Zeiten in diesem Bereich');
+            return;
+        }
+
+        selectTimeTo(hour, timeStr, slot);
+        return;
+    }
+
+    // Если попытались выбрать время раньше selectedTimeFrom
+    if (hour <= selectedTimeFrom) {
+        resetTimeSelection();
+        selectTimeFrom(hour, timeStr, slot);
+        return;
+    }
 }
+
 async function renderTimeSlots() {
     const dateStr = selectedDate.toLocaleDateString('de-DE', {
         weekday: 'long',
@@ -276,35 +247,21 @@ async function renderTimeSlots() {
 }
 
 function createTimeSlot(hour, timeStr) {
-
     const slot = document.createElement('button');
-
     slot.type = 'button';
-
     slot.className = 'time-slot';
-
     slot.textContent = timeStr;
-
     slot.dataset.hour = hour;
 
-    const bookedHours =
-        window.bookedHours || [];
+    const bookedHours = window.bookedHours || [];
 
     if (bookedHours.includes(hour)) {
-
         slot.classList.add('booked');
-
         slot.disabled = true;
-
     } else {
-
         slot.addEventListener(
             'click',
-            () => handleTimeSlotClick(
-                hour,
-                timeStr,
-                slot
-            )
+            () => handleTimeSlotClick(hour, timeStr, slot)
         );
     }
 
@@ -316,104 +273,80 @@ function selectTimeFrom(hour, timeStr, slot) {
     selectedTimeTo = null;
 
     document.querySelectorAll('.time-slot').forEach(s => {
-        s.classList.remove('selected');
+        s.classList.remove('selected', 'selected-to', 'disabled-between');
+        s.style.opacity = '1';
     });
 
     slot.classList.add('selected');
 
     document.getElementById('timeFromDisplay').textContent = timeStr;
     document.getElementById('timeToDisplay').textContent = '--:--';
+    document.getElementById('durationInfo').innerHTML = 'Выберите время окончания';
 
     updateAvailableToTimes();
 }
 
 function updateAvailableToTimes() {
-
     document
         .querySelectorAll('.time-slot')
         .forEach(slot => {
-
-            const hour =
-                parseInt(
-                    slot.dataset.hour
-                );
+            const hour = parseInt(slot.dataset.hour);
 
             if (hour <= selectedTimeFrom) {
-
                 slot.style.opacity = '0.5';
-
+                slot.style.pointerEvents = 'none';
             } else {
-
                 slot.style.opacity = '1';
+                slot.style.pointerEvents = 'auto';
             }
         });
 }
 
-function selectTimeTo(
-    hour,
-    timeStr,
-    slot
-) {
-
+function selectTimeTo(hour, timeStr, slot) {
     selectedTimeTo = hour;
 
     document
         .querySelectorAll('.time-slot')
-        .forEach(slot => {
-
-            slot.classList.remove(
-                'selected-to'
-            );
+        .forEach(s => {
+            s.classList.remove('selected-to', 'disabled-between');
         });
 
-    slot.classList.add(
-        'selected-to'
-    );
+    slot.classList.add('selected-to');
 
-    document.getElementById(
-        'timeToDisplay'
-    ).textContent = timeStr;
+    document.getElementById('timeToDisplay').textContent = timeStr;
 
-    const duration =
-        selectedTimeTo -
-        selectedTimeFrom;
+    const duration = selectedTimeTo - selectedTimeFrom;
 
-    document.getElementById(
-        'durationInfo'
-    ).innerHTML = `
-
+    document.getElementById('durationInfo').innerHTML = `
         <strong>
             ${duration}
             Stunde${duration > 1 ? 'n' : ''}
         </strong>
-
         ausgewählt
     `;
 
-    const bookingEvent =
-        new CustomEvent(
-            'bookingTimeSelected',
-            {
-                detail: {
-                    date:
-                        selectedDate
-                            .toISOString()
-                            .split('T')[0],
+    const bookingEvent = new CustomEvent('bookingTimeSelected', {
+        detail: {
+            date: selectedDate.toISOString().split('T')[0],
+            timeFrom: selectedTimeFrom,
+            timeTo: selectedTimeTo,
+            duration
+        }
+    });
 
-                    timeFrom:
-                        selectedTimeFrom,
+    document.dispatchEvent(bookingEvent);
+}
 
-                    timeTo:
-                        selectedTimeTo,
-
-                    duration
-                }
-            }
-        );
-
-    document.dispatchEvent(
-        bookingEvent
-    );
+function showError(message) {
+    const feedback = document.querySelector('.form-feedback');
+    if (feedback) {
+        feedback.innerHTML = `
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+    }
 }
 
 function setupCalendarNavigation() {
@@ -454,11 +387,9 @@ function initBooking() {
     }, 100);
 }
 
-// if (document.readyState === 'loading') {
-//     document.addEventListener('DOMContentLoaded', initBooking);
-// } else {
-//     initBooking();
-// }
 export {
-    initBooking
+    initBooking,
+    selectedDate,
+    selectedTimeFrom,
+    selectedTimeTo
 };

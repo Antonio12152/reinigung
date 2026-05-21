@@ -1,19 +1,18 @@
 'use strict';
 import { loadCookieBanner } from './cookie.js';
 import { initBooking } from './booking.js';
-const components = [
+import './forms.js';
 
+const components = [
     {
         id: 'header',
         path: 'components/header.html',
         callback: toggleTheme
     },
-
     {
         id: 'footer',
         path: 'components/footer.html'
     },
-
     {
         id: 'cookie-banner',
         path: 'components/cookie-banner.html'
@@ -27,18 +26,13 @@ const components = [
         id: 'contact-form',
         path: 'components/contact-form.html'
     },
-
     {
         id: 'service-form',
-        path: 'components/service-form.html'
+        path: 'components/service-form.html',
+        callback: initServiceForm
     }
 ];
-let bookingData = {
-    date: null,
-    timeFrom: null,
-    timeTo: null,
-    duration: null
-};
+
 function toggleTheme() {
     const themeToggle = document.getElementById('themeToggle');
     const html = document.documentElement;
@@ -58,22 +52,11 @@ function toggleTheme() {
         }
     });
 }
-function initBookingCalendar() {
-    document.addEventListener('bookingTimeSelected', (e) => {
-        bookingData = e.detail;
 
-        showServiceForm();
-    });
+function initServiceForm() {
+    console.log('✅ Service form initialized');
 }
 
-function showServiceForm() {
-    const serviceFormSection = document.getElementById('serviceFormSection');
-
-    if (serviceFormSection) {
-        serviceFormSection.classList.remove('hidden');
-        serviceFormSection.scrollIntoView({ behavior: 'smooth' });
-    }
-}
 async function loadComponent(id, path, callback = null) {
     try {
         const response = await fetch(path);
@@ -100,7 +83,10 @@ async function loadComponent(id, path, callback = null) {
         console.error(`Failed loading ${path}`, error);
     }
 }
+
 const init = async () => {
+    console.log('🚀 Starting application initialization...');
+
     for (const component of components) {
         await loadComponent(
             component.id,
@@ -110,11 +96,16 @@ const init = async () => {
     }
 
     loadCookieBanner();
-    AOS.init({
-        duration: 1000,
-        once: true
-    });
-}
+    
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+    }
+
+    console.log('✅ Application initialized successfully');
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     init();
