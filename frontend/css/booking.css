@@ -1,32 +1,3 @@
-:root {
-    --primary: #2563eb;
-    --primary-light: #dbeafe;
-    --primary-dark: #1e40af;
-    --success: #16a34a;
-    --neutral-50: #f9fafb;
-    --neutral-100: #f3f4f6;
-    --neutral-200: #e5e7eb;
-    --neutral-300: #d1d5db;
-    --neutral-400: #9ca3af;
-    --neutral-600: #4b5563;
-    --neutral-900: #111827;
-    --bg-primary: #ffffff;
-    --bg-secondary: #f9fafb;
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --border-color: #e5e7eb;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-:root.dark-theme {
-    --bg-primary: #1f2937;
-    --bg-secondary: #111827;
-    --text-primary: #f3f4f6;
-    --text-secondary: #d1d5db;
-    --border-color: #374151;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
 .booking-container {
     max-width: 900px;
     margin: 0 auto;
