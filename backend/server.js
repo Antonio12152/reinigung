@@ -8,6 +8,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware для обработки JSON и форм
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// CORS конфигурация
 app.use(cors({
     origin: [
         'http://127.0.0.1:5500',
@@ -19,15 +24,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type']
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
-    next();
-});
-
-app.use(express.static('public'));
 // test replace with normal later
 // const bookedSlots = new Map();
 
@@ -51,8 +47,21 @@ app.use(express.static('public'));
 //     });
 // });
 
-app.use('/forms', formsRouter);
-app.use('/', formsRouter);
+app.use((req, res, next) => {
+    console.log(`\n${new Date().toISOString()} ${req.method} ${req.path}`);
+    console.log(`Content-Type: ${req.get('content-type')}`);
+
+    if (['POST', 'PUT'].includes(req.method)) {
+        console.log(`Body размер: ${JSON.stringify(req.body).length} bytes`);
+        console.log('Body:', JSON.stringify(req.body, null, 2));
+    }
+
+    next();
+});
+
+app.use(express.static('public'));
+
+app.use('/forms', formsRouter); 
 
 app.get('/health', (req, res) => {
     res.json({
@@ -67,9 +76,9 @@ app.get('/', (req, res) => {
         message: 'Cleaning Service API',
         version: '1.0.0',
         endpoints: {
-            forms: '/forms',
-            bookedSlots: '/booked-slots?date=YYYY-MM-DD',
-            health: '/health'
+            forms: 'POST /forms',
+            //bookedSlots: '/booked-slots?date=YYYY-MM-DD',
+            health: 'GET /health'
         }
     });
 });
@@ -77,7 +86,8 @@ app.get('/', (req, res) => {
 app.use((req, res) => {
     res.status(404).json({
         error: 'Route not found',
-        path: req.path
+        path: req.path,
+        method: req.method
     });
 });
 
@@ -90,11 +100,16 @@ app.use((err, req, res, next) => {
     });
 });
 
+
 app.listen(PORT, () => {
     console.log(`
     🚀 Server running at http://localhost:${PORT}
-    ✅ CORS enabled for ${process.env.CLIENT_URL || 'http://localhost:5173'}
-    📧 Email service: ${process.env.MAIL_HOST || 'Not configured'}
+    ✅ CORS enabled for:
+       - http://127.0.0.1:5500
+       - http://localhost:5500
+       - http://localhost:5173
+    📝 Forms endpoint: POST http://localhost:${PORT}/forms
+    🏥 Health check: GET http://localhost:${PORT}/health
     `);
 });
 

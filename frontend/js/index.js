@@ -1,7 +1,7 @@
 'use strict';
 import { loadCookieBanner } from './cookie.js';
 import { initBooking } from './booking.js';
-import './forms.js';
+import { initForms } from './forms.js';
 
 const components = [
     {
@@ -17,19 +17,20 @@ const components = [
         id: 'cookie-banner',
         path: 'components/cookie-banner.html'
     },
-    {
-        id: 'booking-calendar',
-        path: 'components/booking-calendar.html',
-        callback: initBooking
-    },
+    // {
+    //     id: 'booking-calendar',
+    //     path: 'components/booking-calendar.html',
+    //     callback: initBooking
+    // },
     {
         id: 'contact-form',
-        path: 'components/contact-form.html'
+        path: 'components/contact-form.html',
+        callback: initForms  
     },
     {
         id: 'service-form',
         path: 'components/service-form.html',
-        callback: initServiceForm
+        callback: initForms 
     }
 ];
 
@@ -51,10 +52,6 @@ function toggleTheme() {
             themeToggle.innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
         }
     });
-}
-
-function initServiceForm() {
-    console.log('✅ Service form initialized');
 }
 
 async function loadComponent(id, path, callback = null) {
@@ -96,7 +93,7 @@ const init = async () => {
     }
 
     loadCookieBanner();
-    
+
     if (typeof AOS !== 'undefined') {
         AOS.init({
             duration: 1000,

@@ -1,7 +1,6 @@
 <link rel="stylesheet" href="css/service-form.css">
 <form class="container-form custom-form" data-form-type="service">
 
-    <!-- Kontaktinformationen -->
     <div class="form-section">
         <div class="section-title">
             <i class="bi bi-person-circle"></i>
@@ -31,7 +30,6 @@
         </div>
     </div>
 
-    <!-- Adressinformationen -->
     <div class="form-section">
         <div class="section-title">
             <i class="bi bi-geo-alt"></i>
@@ -43,9 +41,17 @@
                 <label class="form-label">Straße und Hausnummer <span style="color: var(--danger);">*</span></label>
                 <input type="text" name="street" class="form-control" placeholder="z.B. Hauptstraße 42" required>
             </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Stadt <span style="color: var(--danger);">*</span></label>
+                    <input type="text" name="city" class="form-control" placeholder="z.B. Berlin" required>
+                </div>
+            </div>
             <div class="col-md-6">
                 <label class="form-label">Postleitzahl <span style="color: var(--danger);">*</span></label>
-                <input type="text" name="postal_code" class="form-control" placeholder="z.B. 10115" required>
+                <input type="text" name="postal_code" class="form-control" placeholder="z.B. 04090" pattern="\d{5}"
+                    maxlength="5" required>
+                <small class="form-text text-muted">5-stellige deutsche Postleitzahl</small>
             </div>
         </div>
 
@@ -74,7 +80,6 @@
         </div>
     </div>
 
-    <!-- Reinigungsdetails -->
     <div class="form-section">
         <div class="section-title">
             <i class="bi bi-brush"></i>

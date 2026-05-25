@@ -1,5 +1,8 @@
 const API_URL = 'http://localhost:3000/forms';
 
+console.log('📋 Forms.js loaded');
+
+/*
 let bookingData = {
     date: null,
     timeFrom: null,
@@ -12,36 +15,198 @@ document.addEventListener('bookingTimeSelected', (e) => {
     console.log('📅 Booking data updated:', bookingData);
     showServiceForm();
 });
+*/
 
-const forms = document.querySelectorAll('.custom-form');
+let bookingData = {
+    date: null,
+    timeFrom: null,
+    timeTo: null,
+    duration: null
+};
 
-forms.forEach(form => {
-    form.addEventListener('submit', handleFormSubmit);
-});
+function initForms() {
+    console.log('🔧 Initializing forms...');
+
+    const forms = document.querySelectorAll('.custom-form');
+
+    console.log(`✅ Found ${forms.length} forms`);
+
+    forms.forEach((form, index) => {
+        const formType = form.dataset.formType;
+        console.log(`📝 Form ${index + 1}: type="${formType}"`);
+
+        form.addEventListener('submit', handleFormSubmit);
+
+        addRealtimeValidation(form);
+    });
+
+    console.log('✅ Forms initialized');
+}
+
+function addRealtimeValidation(form) {
+    const postalCodeInput = form.querySelector('input[name="postal_code"]');
+    const cityInput = form.querySelector('input[name="city"]');
+    const phoneInput = form.querySelector('input[name="phone"]');
+    const emailInput = form.querySelector('input[name="email"]');
+
+    if (postalCodeInput) {
+        postalCodeInput.addEventListener('blur', (e) => {
+            const error = validatePostalCode(e.target.value);
+            showFieldError(e.target, error);
+        });
+
+        postalCodeInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+        });
+    }
+
+    if (cityInput) {
+        cityInput.addEventListener('blur', (e) => {
+            const error = validateCity(e.target.value);
+            showFieldError(e.target, error);
+        });
+
+        cityInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[0-9]/g, '');
+        });
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', (e) => {
+            const error = validatePhone(e.target.value);
+            showFieldError(e.target, error);
+        });
+    }
+
+    if (emailInput) {
+        emailInput.addEventListener('blur', (e) => {
+            const error = validateEmail(e.target.value);
+            showFieldError(e.target, error);
+        });
+    }
+}
+
+function showFieldError(field, error) {
+    field.classList.remove('is-invalid');
+    const existingHint = field.nextElementSibling;
+    if (existingHint && existingHint.classList.contains('invalid-feedback-inline')) {
+        existingHint.remove();
+    }
+
+    if (error) {
+        field.classList.add('is-invalid');
+        const hint = document.createElement('small');
+        hint.className = 'invalid-feedback-inline d-block mt-1';
+        hint.style.color = 'var(--danger)';
+        hint.textContent = error;
+        field.parentNode.insertBefore(hint, field.nextSibling);
+    }
+}
+
+function validatePostalCode(value) {
+    if (!value) {
+        return 'Postleitzahl ist erforderlich';
+    }
+
+    const cleaned = value.replace(/\D/g, '');
+
+    if (cleaned.length !== 5) {
+        return 'Postleitzahl muss 5 Ziffern haben';
+    }
+
+    const numValue = parseInt(cleaned);
+    if (numValue < 1001 || numValue > 99999) {
+        return 'Ungültige Postleitzahl';
+    }
+
+    return null;
+}
+
+function validateCity(value) {
+    if (!value) {
+        return 'Stadt ist erforderlich';
+    }
+
+    if (value.length < 2) {
+        return 'Stadtnamen muss mindestens 2 Zeichen haben';
+    }
+
+    if (value.length > 50) {
+        return 'Stadtnamen darf nicht länger als 50 Zeichen sein';
+    }
+
+    if (!/^[a-zA-ZäöüßÄÖÜ\s\-]+$/.test(value)) {
+        return 'Stadtnamen darf nur Buchstaben, Leerzeichen und Bindestriche enthalten';
+    }
+
+    return null;
+}
+
+function validatePhone(value) {
+    if (!value) {
+        return 'Telefonnummer ist erforderlich';
+    }
+
+    if (value.length < 5) {
+        return 'Telefonnummer zu kurz';
+    }
+
+    if (value.length > 20) {
+        return 'Telefonnummer zu lang';
+    }
+
+    if (!/^[\d\s\+\-\(\)]+$/.test(value)) {
+        return 'Ungültige Telefonnummer';
+    }
+
+    return null; 
+}
+
+function validateEmail(value) {
+    if (!value) {
+        return 'Email ist erforderlich';
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+        return 'Ungültige Email-Adresse';
+    }
+
+    return null;
+}
 
 async function handleFormSubmit(e) {
-    e.preventDefault();
+    e.preventDefault(); 
+
+    console.log('🚀 Form submit intercepted');
 
     const form = e.target;
     const formType = form.dataset.formType;
 
+    console.log(`📌 Form Type: ${formType}`);
+
     clearValidation(form);
 
+    /*
     if (formType === 'service') {
         if (!bookingData.date || bookingData.timeFrom === null || bookingData.timeTo === null) {
             showErrors(form, ['⚠️ Пожалуйста, выберите дату и время в календаре']);
             return;
         }
     }
+    */
 
     const formData = new FormData(form);
     let data = Object.fromEntries(formData.entries());
+
+    console.log('📦 Form Data before processing:', data);
 
     const selectedServices = Array.from(
         form.querySelectorAll('input[name="services"]:checked')
     ).map(el => el.value);
 
     data.services = selectedServices;
+    console.log('🛠️ Selected Services:', selectedServices);
 
     const selectedRequirements = Array.from(
         form.querySelectorAll('input[name="requirements"]:checked')
@@ -49,15 +214,21 @@ async function handleFormSubmit(e) {
 
     if (selectedRequirements.length > 0) {
         data.requirements = selectedRequirements;
+        console.log('⚙️ Requirements:', selectedRequirements);
     }
 
     const errors = validateForm(formType, data);
 
     if (errors.length > 0) {
+        console.warn('❌ Validation errors:', errors);
         showErrors(form, errors);
         return;
     }
 
+    console.log('✅ Validation passed');
+    console.log('📤 Sending data to server:', JSON.stringify({ type: formType, data }, null, 2));
+
+    /*
     if (formType === 'service') {
         data = {
             ...data,
@@ -69,6 +240,7 @@ async function handleFormSubmit(e) {
             }
         };
     }
+    */
 
     try {
         const response = await fetch(API_URL, {
@@ -80,15 +252,21 @@ async function handleFormSubmit(e) {
             })
         });
 
+        console.log(`📊 Response status: ${response.status}`);
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || `HTTP ${response.status}`);
         }
 
         const result = await response.json();
+        console.log('✅ Server response:', result);
+
         showSuccess(form, result.message || 'Anfrage erfolgreich gesendet!');
 
         form.reset();
+
+        /*
         if (formType === 'service') {
             bookingData = {
                 date: null,
@@ -97,7 +275,9 @@ async function handleFormSubmit(e) {
                 duration: null
             };
         }
+        */
 
+        /*
         setTimeout(() => {
             if (formType === 'service') {
                 const serviceFormSection = document.getElementById('service-form');
@@ -106,9 +286,10 @@ async function handleFormSubmit(e) {
                 }
             }
         }, 2000);
+        */
 
     } catch (error) {
-        console.error('Submit error:', error);
+        console.error('❌ Submit error:', error);
         showErrors(form, [
             error.message || 'Serverfehler bei der Anfrage'
         ]);
@@ -126,22 +307,29 @@ function validateForm(type, data) {
         errors.push('❌ Nachname ist erforderlich (mindestens 2 Zeichen)');
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-        errors.push('❌ Ungültige Email-Adresse');
+    const emailError = validateEmail(data.email);
+    if (emailError) {
+        errors.push('❌ ' + emailError);
     }
 
     if (type === 'service') {
-        if (!data.phone || data.phone.trim().length < 5) {
-            errors.push('❌ Telefonnummer ist erforderlich');
+        const phoneError = validatePhone(data.phone);
+        if (phoneError) {
+            errors.push('❌ ' + phoneError);
         }
 
         if (!data.street || data.street.trim().length < 3) {
             errors.push('❌ Straße und Hausnummer sind erforderlich');
         }
 
-        if (!data.postal_code || data.postal_code.trim().length < 3) {
-            errors.push('❌ Postleitzahl ist erforderlich');
+        const postalCodeError = validatePostalCode(data.postal_code);
+        if (postalCodeError) {
+            errors.push('❌ ' + postalCodeError);
+        }
+
+        const cityError = validateCity(data.city);
+        if (cityError) {
+            errors.push('❌ ' + cityError);
         }
 
         if (!data.property_type) {
@@ -157,16 +345,25 @@ function validateForm(type, data) {
             errors.push('❌ Sie müssen den Datenschutzerklärung akzeptieren');
         }
 
+        /*
         if (!bookingData.date || bookingData.timeFrom === null || bookingData.timeTo === null) {
             errors.push('❌ Bitte wählen Sie ein Datum und eine Uhrzeit');
         }
+        */
     }
 
     return errors;
 }
 
 function showErrors(form, errors) {
+    console.log('🚨 Showing errors:', errors);
+
     const feedback = form.querySelector('.form-feedback');
+    if (!feedback) {
+        console.error('❌ .form-feedback not found in form');
+        return;
+    }
+
     feedback.innerHTML = '';
     feedback.setAttribute('role', 'alert');
 
@@ -185,7 +382,14 @@ function showErrors(form, errors) {
 }
 
 function showSuccess(form, message) {
+    console.log('🎉 Showing success:', message);
+
     const feedback = form.querySelector('.form-feedback');
+    if (!feedback) {
+        console.error('❌ .form-feedback not found in form');
+        return;
+    }
+
     feedback.innerHTML = '';
 
     const div = document.createElement('div');
@@ -202,9 +406,21 @@ function showSuccess(form, message) {
 
 function clearValidation(form) {
     const feedback = form.querySelector('.form-feedback');
-    feedback.innerHTML = '';
+    if (feedback) {
+        feedback.innerHTML = '';
+    }
+
+    const fields = form.querySelectorAll('.is-invalid');
+    fields.forEach(field => {
+        field.classList.remove('is-invalid');
+        const hint = field.nextElementSibling;
+        if (hint && hint.classList.contains('invalid-feedback-inline')) {
+            hint.remove();
+        }
+    });
 }
 
+/*
 function showServiceForm() {
     const serviceFormSection = document.getElementById('service-form');
 
@@ -213,16 +429,22 @@ function showServiceForm() {
         serviceFormSection.scrollIntoView({ behavior: 'smooth' });
     }
 }
+*/
 
+/*
 function getBookingData() {
     return {
         ...bookingData
     };
 }
+*/
+
+console.log('📋 Forms.js ready for import');
 
 export {
+    initForms,
+    handleFormSubmit,
     bookingData,
-    getBookingData,
-    showServiceForm,
-    handleFormSubmit
+    // getBookingData, 
+    // showServiceForm,
 };
