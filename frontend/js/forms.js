@@ -1,7 +1,6 @@
 const API_URL = 'http://localhost:3000/forms';
 
 console.log('📋 Forms.js loaded');
-
 /*
 let bookingData = {
     date: null,
@@ -17,18 +16,10 @@ document.addEventListener('bookingTimeSelected', (e) => {
 });
 */
 
-let bookingData = {
-    date: null,
-    timeFrom: null,
-    timeTo: null,
-    duration: null
-};
-
 function initForms() {
     console.log('🔧 Initializing forms...');
 
     const forms = document.querySelectorAll('.custom-form');
-
     console.log(`✅ Found ${forms.length} forms`);
 
     forms.forEach((form, index) => {
@@ -36,7 +27,6 @@ function initForms() {
         console.log(`📝 Form ${index + 1}: type="${formType}"`);
 
         form.addEventListener('submit', handleFormSubmit);
-
         addRealtimeValidation(form);
     });
 
@@ -44,36 +34,23 @@ function initForms() {
 }
 
 function addRealtimeValidation(form) {
-    const postalCodeInput = form.querySelector('input[name="postal_code"]');
-    const cityInput = form.querySelector('input[name="city"]');
-    const phoneInput = form.querySelector('input[name="phone"]');
+    const formType = form.dataset.formType;
+
+    // Общие поля для всех форм
+    const nameInput = form.querySelector('input[name="name"]');
+    const lastnameInput = form.querySelector('input[name="lastname"]');
     const emailInput = form.querySelector('input[name="email"]');
 
-    if (postalCodeInput) {
-        postalCodeInput.addEventListener('blur', (e) => {
-            const error = validatePostalCode(e.target.value);
+    if (nameInput) {
+        nameInput.addEventListener('blur', (e) => {
+            const error = validateName(e.target.value);
             showFieldError(e.target, error);
-        });
-
-        postalCodeInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
         });
     }
 
-    if (cityInput) {
-        cityInput.addEventListener('blur', (e) => {
-            const error = validateCity(e.target.value);
-            showFieldError(e.target, error);
-        });
-
-        cityInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/[0-9]/g, '');
-        });
-    }
-
-    if (phoneInput) {
-        phoneInput.addEventListener('blur', (e) => {
-            const error = validatePhone(e.target.value);
+    if (lastnameInput) {
+        lastnameInput.addEventListener('blur', (e) => {
+            const error = validateLastname(e.target.value);
             showFieldError(e.target, error);
         });
     }
@@ -84,6 +61,47 @@ function addRealtimeValidation(form) {
             showFieldError(e.target, error);
         });
     }
+
+    if (formType === 'service') {
+        const postalCodeInput = form.querySelector('input[name="postal_code"]');
+        const cityInput = form.querySelector('input[name="city"]');
+        const phoneInput = form.querySelector('input[name="phone"]');
+
+        if (postalCodeInput) {
+            postalCodeInput.addEventListener('blur', (e) => {
+                const error = validatePostalCode(e.target.value);
+                showFieldError(e.target, error);
+            });
+
+            postalCodeInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+            });
+        }
+
+        if (cityInput) {
+            cityInput.addEventListener('blur', (e) => {
+                const error = validateCity(e.target.value);
+                showFieldError(e.target, error);
+            });
+
+            cityInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[0-9]/g, '');
+            });
+        }
+
+        if (phoneInput) {
+            phoneInput.addEventListener('blur', (e) => {
+                const error = validatePhone(e.target.value);
+                showFieldError(e.target, error);
+            });
+        }
+    }
+
+    /*
+if (!bookingData.date || bookingData.timeFrom === null || bookingData.timeTo === null) {
+    errors.push('❌ Bitte wählen Sie ein Datum und eine Uhrzeit');
+}
+*/
 }
 
 function showFieldError(field, error) {
@@ -101,6 +119,55 @@ function showFieldError(field, error) {
         hint.textContent = error;
         field.parentNode.insertBefore(hint, field.nextSibling);
     }
+}
+
+function validateName(value) {
+    if (!value) {
+        return 'Vorname ist erforderlich';
+    }
+
+    const trimmed = String(value).trim();
+
+    if (trimmed.length < 2) {
+        return 'Vorname muss mindestens 2 Zeichen haben';
+    }
+
+    if (trimmed.length > 50) {
+        return 'Vorname darf nicht länger als 50 Zeichen sein';
+    }
+
+    return null;
+}
+
+function validateLastname(value) {
+    if (!value) {
+        return 'Nachname ist erforderlich';
+    }
+
+    const trimmed = String(value).trim();
+
+    if (trimmed.length < 2) {
+        return 'Nachname muss mindestens 2 Zeichen haben';
+    }
+
+    if (trimmed.length > 50) {
+        return 'Nachname darf nicht länger als 50 Zeichen sein';
+    }
+
+    return null;
+}
+
+function validateEmail(value) {
+    if (!value) {
+        return 'Email ist erforderlich';
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+        return 'Ungültige Email-Adresse';
+    }
+
+    return null;
 }
 
 function validatePostalCode(value) {
@@ -159,24 +226,11 @@ function validatePhone(value) {
         return 'Ungültige Telefonnummer';
     }
 
-    return null; 
-}
-
-function validateEmail(value) {
-    if (!value) {
-        return 'Email ist erforderlich';
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
-        return 'Ungültige Email-Adresse';
-    }
-
     return null;
 }
 
 async function handleFormSubmit(e) {
-    e.preventDefault(); 
+    e.preventDefault();
 
     console.log('🚀 Form submit intercepted');
 
@@ -187,34 +241,27 @@ async function handleFormSubmit(e) {
 
     clearValidation(form);
 
-    /*
-    if (formType === 'service') {
-        if (!bookingData.date || bookingData.timeFrom === null || bookingData.timeTo === null) {
-            showErrors(form, ['⚠️ Пожалуйста, выберите дату и время в календаре']);
-            return;
-        }
-    }
-    */
-
     const formData = new FormData(form);
     let data = Object.fromEntries(formData.entries());
 
     console.log('📦 Form Data before processing:', data);
 
-    const selectedServices = Array.from(
-        form.querySelectorAll('input[name="services"]:checked')
-    ).map(el => el.value);
+    if (formType === 'service') {
+        const selectedServices = Array.from(
+            form.querySelectorAll('input[name="services"]:checked')
+        ).map(el => el.value);
 
-    data.services = selectedServices;
-    console.log('🛠️ Selected Services:', selectedServices);
+        data.services = selectedServices;
+        console.log('🛠️ Selected Services:', selectedServices);
 
-    const selectedRequirements = Array.from(
-        form.querySelectorAll('input[name="requirements"]:checked')
-    ).map(el => el.value);
+        const selectedRequirements = Array.from(
+            form.querySelectorAll('input[name="requirements"]:checked')
+        ).map(el => el.value);
 
-    if (selectedRequirements.length > 0) {
-        data.requirements = selectedRequirements;
-        console.log('⚙️ Requirements:', selectedRequirements);
+        if (selectedRequirements.length > 0) {
+            data.requirements = selectedRequirements;
+            console.log('⚙️ Requirements:', selectedRequirements);
+        }
     }
 
     const errors = validateForm(formType, data);
@@ -227,7 +274,6 @@ async function handleFormSubmit(e) {
 
     console.log('✅ Validation passed');
     console.log('📤 Sending data to server:', JSON.stringify({ type: formType, data }, null, 2));
-
     /*
     if (formType === 'service') {
         data = {
@@ -241,7 +287,6 @@ async function handleFormSubmit(e) {
         };
     }
     */
-
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -256,7 +301,7 @@ async function handleFormSubmit(e) {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP ${response.status}`);
+            throw new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
         }
 
         const result = await response.json();
@@ -265,28 +310,6 @@ async function handleFormSubmit(e) {
         showSuccess(form, result.message || 'Anfrage erfolgreich gesendet!');
 
         form.reset();
-
-        /*
-        if (formType === 'service') {
-            bookingData = {
-                date: null,
-                timeFrom: null,
-                timeTo: null,
-                duration: null
-            };
-        }
-        */
-
-        /*
-        setTimeout(() => {
-            if (formType === 'service') {
-                const serviceFormSection = document.getElementById('service-form');
-                if (serviceFormSection) {
-                    serviceFormSection.classList.add('hidden');
-                }
-            }
-        }, 2000);
-        */
 
     } catch (error) {
         console.error('❌ Submit error:', error);
@@ -299,17 +322,25 @@ async function handleFormSubmit(e) {
 function validateForm(type, data) {
     const errors = [];
 
-    if (!data.name || data.name.trim().length < 2) {
-        errors.push('❌ Vorname ist erforderlich (mindestens 2 Zeichen)');
+    const nameError = validateName(data.name);
+    if (nameError) {
+        errors.push('❌ ' + nameError);
     }
 
-    if (!data.lastname || data.lastname.trim().length < 2) {
-        errors.push('❌ Nachname ist erforderlich (mindestens 2 Zeichen)');
+    const lastnameError = validateLastname(data.lastname);
+    if (lastnameError) {
+        errors.push('❌ ' + lastnameError);
     }
 
     const emailError = validateEmail(data.email);
     if (emailError) {
         errors.push('❌ ' + emailError);
+    }
+
+    if (type === 'contact') {
+        if (data.message && data.message.trim().length > 5000) {
+            errors.push('❌ Nachricht darf nicht länger als 5000 Zeichen sein');
+        }
     }
 
     if (type === 'service') {
@@ -344,12 +375,6 @@ function validateForm(type, data) {
         if (!data.terms) {
             errors.push('❌ Sie müssen den Datenschutzerklärung akzeptieren');
         }
-
-        /*
-        if (!bookingData.date || bookingData.timeFrom === null || bookingData.timeTo === null) {
-            errors.push('❌ Bitte wählen Sie ein Datum und eine Uhrzeit');
-        }
-        */
     }
 
     return errors;
@@ -419,7 +444,6 @@ function clearValidation(form) {
         }
     });
 }
-
 /*
 function showServiceForm() {
     const serviceFormSection = document.getElementById('service-form');
@@ -438,13 +462,12 @@ function getBookingData() {
     };
 }
 */
-
 console.log('📋 Forms.js ready for import');
 
 export {
     initForms,
     handleFormSubmit,
-    bookingData,
+    // bookingData,
     // getBookingData, 
     // showServiceForm,
 };

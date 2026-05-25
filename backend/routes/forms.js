@@ -1,518 +1,175 @@
-// backend/routes/forms.js
 import express from 'express';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
 const router = express.Router();
 
-let transporter;
+let transporter = null;
+
+/* ============================================================================
+   EMAIL INITIALIZATION
+============================================================================ */
 
 async function initializeTransporter() {
     try {
-        if (process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASSWORD) {
-            transporter = nodemailer.createTransport({
-                host: process.env.MAIL_HOST,
-                port: parseInt(process.env.MAIL_PORT) || 587,
-                secure: process.env.MAIL_SECURE === 'true' ? true : false,
-                auth: {
-                    user: process.env.MAIL_USER,
-                    pass: process.env.MAIL_PASSWORD
-                },
-                tls: {
-                    rejectUnauthorized: false
-                }
-            });
+        console.log('\n📧 Initializing email transporter...\n');
 
-            await transporter.verify();
-            console.log('✅ Email transporter verified successfully');
-        } else {
-            console.warn('⚠️ Email configuration not complete. Using test account.');
+        console.log({
+            MAIL_HOST: process.env.MAIL_HOST,
+            MAIL_PORT: process.env.MAIL_PORT,
+            MAIL_USER: process.env.MAIL_USER,
+            MAIL_PASSWORD: process.env.MAIL_PASSWORD ? 'SET' : 'NOT SET'
+        });
 
-            const testAccount = await nodemailer.createTestAccount();
-            transporter = nodemailer.createTransport({
-                host: 'smtp.ethereal.email',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: testAccount.user,
-                    pass: testAccount.pass
-                }
-            });
-
-            console.log('📧 Test email account created');
-            console.log(`   User: ${testAccount.user}`);
-            console.log(`   Pass: ${testAccount.pass}`);
+        if (
+            !process.env.MAIL_HOST ||
+            !process.env.MAIL_USER ||
+            !process.env.MAIL_PASSWORD
+        ) {
+            throw new Error('Missing email environment variables');
         }
+
+        transporter = nodemailer.createTransport({
+            host: process.env.MAIL_HOST,
+            port: Number(process.env.MAIL_PORT) || 587,
+            secure: process.env.MAIL_SECURE === 'true',
+            auth: {
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PASSWORD
+            }
+        });
+
+        await transporter.verify();
+
+        console.log('✅ Email transporter verified successfully\n');
+
     } catch (error) {
-        console.error('❌ Email transporter initialization failed:', error.message);
-        console.warn('⚠️ Email sending will be disabled');
+        console.error('❌ Email transporter error:\n');
+        console.error(error.message);
         transporter = null;
     }
 }
 
-initializeTransporter().catch(console.error);
+await initializeTransporter();
 
-const bookedSlots = new Map();
+/* ============================================================================
+   VALIDATION HELPERS
+============================================================================ */
 
-function validatePostalCode(postalCode) {
-    if (!postalCode) {
-        return 'Postleitzahl ist erforderlich';
+function sanitizeString(value) {
+    if (typeof value !== 'string') return '';
+    return value.trim();
+}
+
+function validateRequired(value, field) {
+    if (value == null || value === '') {
+        return `${field} is required`;
     }
-
-    const cleaned = String(postalCode).replace(/\D/g, '');
-
-    if (cleaned.length !== 5) {
-        return 'Postleitzahl muss genau 5 Ziffern haben';
-    }
-
-    const numValue = parseInt(cleaned);
-    if (numValue < 1001 || numValue > 99999) {
-        return 'Postleitzahl ist außerhalb des gültigen Bereichs';
-    }
-
     return null;
 }
 
-function validateCity(city) {
-    if (!city) {
-        return 'Stadt ist erforderlich';
+function validateName(name, field = 'Name') {
+    name = sanitizeString(name);
+
+    if (!name) {
+        return `${field} is required`;
     }
 
-    const trimmed = String(city).trim();
-
-    if (trimmed.length < 2) {
-        return 'Stadtnamen muss mindestens 2 Zeichen haben';
+    if (name.length < 2) {
+        return `${field} must contain at least 2 characters`;
     }
 
-    if (trimmed.length > 50) {
-        return 'Stadtnamen darf nicht länger als 50 Zeichen sein';
+    if (name.length > 50) {
+        return `${field} is too long`;
     }
 
-    if (!/^[a-zA-ZäöüßÄÖÜ\s\-]+$/.test(trimmed)) {
-        return 'Stadtnamen darf nur Buchstaben, Leerzeichen und Bindestriche enthalten';
-    }
-
-    return null;
-}
-
-function validatePhone(phone) {
-    if (!phone) {
-        return 'Telefonnummer ist erforderlich';
-    }
-
-    const trimmed = String(phone).trim();
-
-    if (trimmed.length < 5) {
-        return 'Telefonnummer zu kurz';
-    }
-
-    if (trimmed.length > 20) {
-        return 'Telefonnummer zu lang';
-    }
-
-    if (!/^[\d\s\+\-\(\)]+$/.test(trimmed)) {
-        return 'Ungültige Telefonnummer';
+    if (!/^[a-zA-ZäöüÄÖÜß\s-]+$/u.test(name)) {
+        return `${field} contains invalid characters`;
     }
 
     return null;
 }
 
 function validateEmail(email) {
+    email = sanitizeString(email);
+
     if (!email) {
-        return 'Email ist erforderlich';
+        return 'Email is required';
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return 'Ungültige Email-Adresse';
-    }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    return null;
-}
-
-function validateStreet(street) {
-    if (!street) {
-        return 'Straße und Hausnummer sind erforderlich';
-    }
-
-    const trimmed = String(street).trim();
-
-    if (trimmed.length < 3) {
-        return 'Straße und Hausnummer müssen mindestens 3 Zeichen lang sein';
-    }
-
-    if (trimmed.length > 100) {
-        return 'Straße und Hausnummer zu lang';
+    if (!regex.test(email)) {
+        return 'Invalid email address';
     }
 
     return null;
 }
 
-router.post('/', async (req, res) => {
-    try {
-        const { type, data } = req.body;
+function validatePhone(phone) {
+    phone = sanitizeString(phone);
 
-        console.log(req.body);
-        console.log(data);
-
-        console.log('\n' + '═'.repeat(80));
-        console.log('📝 NEW FORM SUBMISSION');
-        console.log('═'.repeat(80));
-
-        if (!type || !['service', 'contact'].includes(type)) {
-            console.log('❌ Error: invalid form type:', type);
-            return res.status(400).json({
-                error: 'Invalid form type'
-            });
-        }
-
-        console.log(`📌 Form Type: ${type === 'service' ? 'SERVICE' : 'CONTACT'}`);
-
-        const requiredFields = ['name', 'lastname', 'email'];
-        for (const field of requiredFields) {
-            if (!data[field] || typeof data[field] !== 'string') {
-                console.log(`❌ Error: field "${field}" is required`);
-                return res.status(400).json({
-                    error: `Field "${field}" is required`
-                });
-            }
-        }
-
-        const emailError = validateEmail(data.email);
-        if (emailError) {
-            console.log(`❌ Email validation error: ${emailError}`);
-            return res.status(400).json({
-                error: emailError
-            });
-        }
-
-        console.log('\n👤 Contact Information:');
-        console.log(`   Name: ${data.name}`);
-        console.log(`   Last Name: ${data.lastname}`);
-        console.log(`   Email: ${data.email}`);
-
-        if (type === 'service') {
-            const serviceFields = ['phone', 'street', 'postal_code', 'city', 'property_type', 'services'];
-            for (const field of serviceFields) {
-                if (!data[field]) {
-                    console.log(`❌ Error: field "${field}" is required for service form`);
-                    return res.status(400).json({
-                        error: `Field "${field}" is required for service form`
-                    });
-                }
-            }
-
-            const phoneError = validatePhone(data.phone);
-            if (phoneError) {
-                console.log(`❌ Phone validation error: ${phoneError}`);
-                return res.status(400).json({
-                    error: phoneError
-                });
-            }
-
-            const streetError = validateStreet(data.street);
-            if (streetError) {
-                console.log(`❌ Street validation error: ${streetError}`);
-                return res.status(400).json({
-                    error: streetError
-                });
-            }
-
-            const postalCodeError = validatePostalCode(data.postal_code);
-            if (postalCodeError) {
-                console.log(`❌ Postal code validation error: ${postalCodeError}`);
-                return res.status(400).json({
-                    error: postalCodeError
-                });
-            }
-
-            const cityError = validateCity(data.city);
-            if (cityError) {
-                console.log(`❌ City validation error: ${cityError}`);
-                return res.status(400).json({
-                    error: cityError
-                });
-            }
-
-            console.log('\n📍 Address:');
-            console.log(`   Street: ${data.street}`);
-            console.log(`   Postal Code: ${data.postal_code}`);
-            console.log(`   City: ${data.city}`);
-            console.log(`   Property Type: ${data.property_type}`);
-
-            console.log('\n☎️ Contact:');
-            console.log(`   Phone: ${data.phone}`);
-
-            console.log('\n🛠️ Services:');
-            const serviceNames = {
-                floor: 'Bodenreinigung',
-                windows: 'Fensterreinigung',
-                deep: 'Tiefenreinigung',
-                kitchen: 'Küchenreinigung',
-                bathroom: 'Badezimmerreinigung',
-                carpet: 'Teppichreinigung'
-            };
-
-            if (Array.isArray(data.services)) {
-                data.services.forEach(service => {
-                    console.log(`   ✓ ${serviceNames[service] || service}`);
-                });
-            }
-
-            if (data.requirements && data.requirements.length > 0) {
-                console.log('\n⚙️ Requirements:');
-                const reqNames = {
-                    hypoallergenic: 'Hypoallergene Mittel',
-                    eco: 'Eco-friendly',
-                    pet_friendly: 'Haustiere anwesend'
-                };
-                data.requirements.forEach(req => {
-                    console.log(`   ✓ ${reqNames[req] || req}`);
-                });
-            }
-
-            if (data.booking && data.booking.date) {
-                console.log('\n📅 Booking:');
-                console.log(`   Date: ${data.booking.date}`);
-                console.log(`   From: ${String(data.booking.timeFrom).padStart(2, '0')}:00`);
-                console.log(`   To: ${String(data.booking.timeTo).padStart(2, '0')}:00`);
-                console.log(`   Duration: ${data.booking.duration} hours`);
-
-                const bookedHours = bookedSlots.get(data.booking.date) || [];
-                for (let hour = data.booking.timeFrom; hour <= data.booking.timeTo; hour++) {
-                    if (bookedHours.includes(hour)) {
-                        console.log(`❌ Error: Time slot ${hour}:00 is already booked`);
-                        return res.status(409).json({
-                            error: `Time slot ${hour}:00 is already booked for this date`
-                        });
-                    }
-                }
-
-                const newBookedHours = [
-                    ...bookedHours,
-                    ...Array.from(
-                        { length: data.booking.timeTo - data.booking.timeFrom + 1 },
-                        (_, i) => data.booking.timeFrom + i
-                    )
-                ];
-                bookedSlots.set(data.booking.date, newBookedHours);
-                console.log(`✅ Booked hours recorded:`, newBookedHours);
-            }
-        }
-
-        if (data.details) {
-            console.log('\n📝 Additional Details:');
-            console.log(`   ${data.details.substring(0, 100)}${data.details.length > 100 ? '...' : ''}`);
-        }
-
-        const formId = generateFormId();
-
-        console.log('\n📧 Email Processing:');
-
-        if (!transporter) {
-            console.log('⚠️ Email transporter not configured. Skipping email sending.');
-        } else {
-            try {
-                // const adminEmailContent = generateEmailContent(type, data);
-                // await sendEmail(
-                //     process.env.ADMIN_EMAIL || 'admin@example.com',
-                //     `Neue ${type === 'service' ? 'Service' : 'Kontakt'} Anfrage - ${formId}`,
-                //     adminEmailContent
-                // );
-
-                const adminEmailContent = generateEmailContent(type, data);
-                const adminInfo = await sendEmail(
-                    process.env.ADMIN_EMAIL || 'admin@example.com',
-                    `Neue ${type === 'service' ? 'Service' : 'Kontakt'} Anfrage - ${formId}`,
-                    adminEmailContent
-                );
-
-                const clientEmailContent = generateConfirmationEmail(type, data);
-                const clientInfo = await sendEmail(
-                    data.email,
-                    'Anfrage bestätigt - Vielen Dank!',
-                    clientEmailContent
-                );
-
-                console.log('✅ Emails sent successfully');
-            } catch (emailError) {
-                console.error('⚠️ Email sending failed:', emailError.message);
-            }
-        }
-
-        console.log('\n' + '═'.repeat(80));
-        console.log('✅ Form submission successful. Form ID:', formId);
-        console.log('═'.repeat(80));
-        console.log('');
-
-        return res.status(200).json({
-            success: true,
-            message: `Anfrage erfolgreich empfangen. Sie erhalten eine Bestätigung per Email.`,
-            formId: formId
-        });
-
-    } catch (error) {
-        console.error('\n❌ FORM PROCESSING ERROR:');
-        console.error(error.message);
-        console.error('');
-
-        return res.status(500).json({
-            error: 'An error occurred while processing the form',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+    if (!phone) {
+        return 'Phone number is required';
     }
-});
 
-async function sendEmail(to, subject, html) {
-    try {
-        console.log(`   📤 Sending email to ${to}...`);
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || process.env.MAIL_USER || 'noreply@example.com',
-            to,
-            subject,
-            html,
-            text: stripHtml(html)
-        });
-
-        console.log(`   ✅ Email sent: ${info.messageId}`);
-
-        if (info.response && info.response.includes('SMTP')) {
-            const previewUrl = nodemailer.getTestMessageUrl(info);
-            if (previewUrl) {
-                console.log(`   🔗 Preview: ${previewUrl}`);
-            }
-        }
-
-        return info;
-    } catch (error) {
-        console.error(`   ❌ Email sending failed: ${error.message}`);
-        throw error;
+    if (!/^[\d+\-\s()]+$/.test(phone)) {
+        return 'Invalid phone number';
     }
+
+    if (phone.length < 6 || phone.length > 20) {
+        return 'Phone number length is invalid';
+    }
+
+    return null;
 }
 
-function generateEmailContent(type, data) {
-    const baseHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Neue ${type === 'service' ? 'Service-Anfrage' : 'Kontaktanfrage'}</h2>
-            
-            <h3 style="color: #4a90e2; margin-top: 20px;">Kundendaten</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr style="background-color: #f5f5f5;">
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Vorname</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(data.name)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Nachname</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(data.lastname)}</td>
-                </tr>
-                <tr style="background-color: #f5f5f5;">
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Email</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><a href="mailto:${escapeHtml(data.email)}">${escapeHtml(data.email)}</a></td>
-                </tr>
-    `;
+function validatePostalCode(postalCode) {
+    postalCode = sanitizeString(postalCode);
 
-    let html = baseHtml;
-
-    if (type === 'service') {
-        html += `
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Telefon</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(data.phone)}</td>
-                </tr>
-                <tr style="background-color: #f5f5f5;">
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Adresse</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(data.street)}<br>${escapeHtml(data.postal_code)} ${escapeHtml(data.city)}<br></td>
-                </tr>
-            </table>
-
-            <h3 style="color: #4a90e2; margin-top: 20px;">Service-Details</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr style="background-color: #f5f5f5;">
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Wohnungstyp</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(data.property_type)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Services</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${formatServicesList(data.services)}</td>
-                </tr>
-                ${data.requirements && data.requirements.length > 0 ? `
-                <tr style="background-color: #f5f5f5;">
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Spezielle Anforderungen</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${formatServicesList(data.requirements)}</td>
-                </tr>
-                ` : ''}
-                ${data.booking && data.booking.date ? `
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Datum</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${formatDate(data.booking.date)}</td>
-                </tr>
-                <tr style="background-color: #f5f5f5;">
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Uhrzeit</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${String(data.booking.timeFrom).padStart(2, '0')}:00 - ${String(data.booking.timeTo).padStart(2, '0')}:00</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Dauer</strong></td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${data.booking.duration} Stunde${data.booking.duration > 1 ? 'n' : ''}</td>
-                </tr>
-                ` : ''}
-            </table>
-        `;
+    if (!postalCode) {
+        return 'Postal code is required';
     }
 
-    if (data.details) {
-        html += `
-            <h3 style="color: #4a90e2; margin-top: 20px;">Zusätzliche Anforderungen</h3>
-            <p style="padding: 15px; background-color: #f9f9f9; border-left: 4px solid #4a90e2;">
-                ${escapeHtml(data.details).replace(/\n/g, '<br>')}
-            </p>
-        `;
+    if (!/^\d{5}$/.test(postalCode)) {
+        return 'Postal code must contain 5 digits';
     }
 
-    html += `
-            <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
-                Eingereicht am: ${new Date().toLocaleString('de-DE')}
-            </p>
-        </div>
-    `;
-
-    return html;
+    return null;
 }
 
-// ===== ГЕНЕРАЦИЯ ПОДТВЕРЖДАЮЩЕГО EMAIL ДЛЯ КЛИЕНТА =====
-function generateConfirmationEmail(type, data) {
-    return `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #50c878;">Vielen Dank für Ihre Anfrage!</h2>
-            <p>Lieber ${escapeHtml(data.name)},</p>
-            <p>wir haben Ihre Anfrage erfolgreich erhalten und werden uns in Kürze mit Ihnen in Verbindung setzen.</p>
-            
-            ${type === 'service' && data.booking && data.booking.date ? `
-                <h3 style="color: #4a90e2; margin-top: 20px;">Ihre Terminbuchung</h3>
-                <p>
-                    <strong>Datum:</strong> ${formatDate(data.booking.date)}<br>
-                    <strong>Uhrzeit:</strong> ${String(data.booking.timeFrom).padStart(2, '0')}:00 - ${String(data.booking.timeTo).padStart(2, '0')}:00<br>
-                    <strong>Dauer:</strong> ${data.booking.duration} Stunde${data.booking.duration > 1 ? 'n' : ''}
-                </p>
-            ` : ''}
-            
-            <p style="margin-top: 20px; padding: 15px; background-color: #f0f8ff; border-left: 4px solid #4a90e2; color: #333;">
-                Unser Team wird sich in den nächsten 24 Stunden mit Ihnen in Verbindung setzen, um alle Details zu klären.
-            </p>
-            
-            <p style="color: #666; margin-top: 20px;">
-                Mit freundlichen Grüßen<br>
-                Das Reinigungsteam
-            </p>
-        </div>
-    `;
+function validateText(text, field, min = 2, max = 500) {
+    text = sanitizeString(text);
+
+    if (!text) {
+        return `${field} is required`;
+    }
+
+    if (text.length < min) {
+        return `${field} is too short`;
+    }
+
+    if (text.length > max) {
+        return `${field} is too long`;
+    }
+
+    return null;
 }
 
-// ===== УТИЛИТЫ =====
-function escapeHtml(text) {
-    if (!text) return '';
+function validateArray(arr, field) {
+    if (!Array.isArray(arr) || arr.length === 0) {
+        return `${field} must contain at least one item`;
+    }
+
+    return null;
+}
+
+/* ============================================================================
+   SANITIZE HTML
+============================================================================ */
+
+function escapeHtml(text = '') {
     const map = {
         '&': '&amp;',
         '<': '&lt;',
@@ -520,47 +177,628 @@ function escapeHtml(text) {
         '"': '&quot;',
         "'": '&#039;'
     };
+
     return String(text).replace(/[&<>"']/g, m => map[m]);
 }
 
-function stripHtml(html) {
-    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"');
+/* ============================================================================
+   EMAIL
+============================================================================ */
+
+async function sendEmail(to, subject, html) {
+    if (!transporter) {
+        throw new Error('Email transporter not initialized');
+    }
+
+    const info = await transporter.sendMail({
+        from: process.env.MAIL_FROM || process.env.MAIL_USER,
+        to,
+        subject,
+        html,
+        text: html.replace(/<[^>]*>/g, '')
+    });
+
+    console.log(`✅ Email sent to ${to}`);
+    console.log(`📨 Message ID: ${info.messageId}`);
+
+    return info;
 }
 
-function formatServicesList(services) {
-    const serviceNames = {
+/* ============================================================================
+   EMAIL TEMPLATES
+============================================================================ */
+
+function generateAdminEmail(data, formType = 'service') {
+    if (formType === 'contact') {
+        return `
+        <table style="
+                    width:100%;
+                    border-collapse: collapse;
+                    margin-bottom:30px;
+                ">
+                    <tr>
+                        <td style="${tdTitle}">
+                            Vorname
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.name)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            Nachname
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.lastname)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            E-Mail
+                        </td>
+
+                        <td style="${tdValue}">
+                            <a href="mailto:${escapeHtml(data.email)}">
+                                ${escapeHtml(data.email)}
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                <h2 style="
+                    color:#357ABD;
+                    margin-top:30px;
+                    margin-bottom:15px;
+                ">
+                    Nachricht
+                </h2>
+
+                <div style="
+                    background:#f7f9fc;
+                    padding:20px;
+                    border-radius:8px;
+                    line-height:1.7;
+                    color:#444;
+                ">
+                    ${escapeHtml(data.message || '')}
+                </div>
+                `;
+
+    }
+    return `
+        <div style="
+            font-family: Arial, sans-serif;
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+        ">
+            
+            <div style="
+                background: linear-gradient(135deg, #4a90e2, #357ABD);
+                padding: 30px;
+                color: white;
+            ">
+                <h1 style="margin:0; font-size:28px;">
+                    Neue Reinigungsanfrage
+                </h1>
+
+                <p style="
+                    margin-top:10px;
+                    opacity:0.9;
+                    font-size:15px;
+                ">
+                    Eine neue Anfrage wurde über die Website gesendet.
+                </p>
+            </div>
+
+            <div style="padding: 30px;">
+
+                <h2 style="
+                    color:#357ABD;
+                    margin-top:0;
+                    margin-bottom:20px;
+                    font-size:22px;
+                ">
+                    Kundendaten
+                </h2>
+
+                <table style="
+                    width:100%;
+                    border-collapse: collapse;
+                    margin-bottom:30px;
+                ">
+                    <tr>
+                        <td style="${tdTitle}">
+                            Vorname
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.name)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            Nachname
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.lastname)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            E-Mail
+                        </td>
+
+                        <td style="${tdValue}">
+                            <a href="mailto:${escapeHtml(data.email)}">
+                                ${escapeHtml(data.email)}
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            Telefon
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.phone)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            Adresse
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.street)}<br>
+                            ${escapeHtml(data.postal_code)}
+                            ${escapeHtml(data.city)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            Immobilientyp
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${escapeHtml(data.property_type)}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="${tdTitle}">
+                            Dienstleistungen
+                        </td>
+
+                        <td style="${tdValue}">
+                            ${formatServices(data.services)}
+                        </td>
+                    </tr>
+                </table>
+
+                ${data.booking
+            ? `
+                    <h2 style="
+                        color:#357ABD;
+                        margin-bottom:20px;
+                        font-size:22px;
+                    ">
+                        Termininformationen
+                    </h2>
+
+                    <table style="
+                        width:100%;
+                        border-collapse: collapse;
+                        margin-bottom:30px;
+                    ">
+                        <tr>
+                            <td style="${tdTitle}">
+                                Datum
+                            </td>
+
+                            <td style="${tdValue}">
+                                ${escapeHtml(data.booking.date || '')}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="${tdTitle}">
+                                Uhrzeit
+                            </td>
+
+                            <td style="${tdValue}">
+                                ${escapeHtml(data.booking.timeFrom || '')}:00
+                                -
+                                ${escapeHtml(data.booking.timeTo || '')}:00
+                            </td>
+                        </tr>
+                    </table>
+                `
+            : ''
+        }
+
+                ${data.details
+            ? `
+                    <h2 style="
+                        color:#357ABD;
+                        margin-bottom:15px;
+                        font-size:22px;
+                    ">
+                        Zusätzliche Informationen
+                    </h2>
+
+                    <div style="
+                        background:#f7f9fc;
+                        padding:20px;
+                        border-radius:8px;
+                        line-height:1.7;
+                        color:#444;
+                    ">
+                        ${escapeHtml(data.details)}
+                    </div>
+                `
+            : ''
+        }
+
+            </div>
+
+            <div style="
+                background:#f5f7fa;
+                padding:20px 30px;
+                color:#777;
+                font-size:13px;
+                text-align:center;
+            ">
+                Eingegangen am ${new Date().toLocaleString('de-DE')}
+            </div>
+
+        </div>
+    `;
+}
+
+function generateClientEmail(data, formType = 'service') {
+    if (formType === 'contact') {
+        return `
+            <div style="
+                background:#f7f9fc;
+                padding:20px;
+                border-radius:8px;
+                margin:25px 0;
+            ">
+                <strong>Ihre Nachricht:</strong><br><br>
+
+                ${escapeHtml(data.message || '')}
+            </div>
+            `;
+    }
+    return `
+        <div style="
+            font-family: Arial, sans-serif;
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+        ">
+
+            <div style="
+                background: linear-gradient(135deg, #50c878, #37a85c);
+                padding: 35px;
+                text-align:center;
+                color:white;
+            ">
+                <h1 style="
+                    margin:0;
+                    font-size:30px;
+                ">
+                    Vielen Dank!
+                </h1>
+
+                <p style="
+                    margin-top:12px;
+                    font-size:16px;
+                    opacity:0.95;
+                ">
+                    Ihre Anfrage wurde erfolgreich übermittelt.
+                </p>
+            </div>
+
+            <div style="padding:35px; color:#333;">
+
+                <p style="
+                    font-size:17px;
+                    margin-top:0;
+                ">
+                    Hallo ${escapeHtml(data.name)},
+                </p>
+
+                <p style="
+                    line-height:1.8;
+                    font-size:15px;
+                    color:#555;
+                ">
+                    vielen Dank für Ihre Anfrage und Ihr Interesse an unserem
+                    Reinigungsservice.
+                </p>
+
+                <p style="
+                    line-height:1.8;
+                    font-size:15px;
+                    color:#555;
+                ">
+                    Unser Team hat Ihre Anfrage erhalten und wird sich
+                    schnellstmöglich mit Ihnen in Verbindung setzen, um alle
+                    Details zu bestätigen.
+                </p>
+
+                ${data.booking
+            ? `
+                    <div style="
+                        background:#f7f9fc;
+                        border-left:4px solid #50c878;
+                        padding:20px;
+                        margin:30px 0;
+                        border-radius:8px;
+                    ">
+                        <h3 style="
+                            margin-top:0;
+                            color:#37a85c;
+                        ">
+                            Ihre Buchungsinformationen
+                        </h3>
+
+                        <p style="margin:8px 0;">
+                            <strong>Datum:</strong>
+                            ${escapeHtml(data.booking.date || '')}
+                        </p>
+
+                        <p style="margin:8px 0;">
+                            <strong>Uhrzeit:</strong>
+                            ${escapeHtml(data.booking.timeFrom || '')}:00
+                            -
+                            ${escapeHtml(data.booking.timeTo || '')}:00
+                        </p>
+                    </div>
+                `
+            : ''
+        }
+
+                <div style="
+                    background:#eef6ff;
+                    border:1px solid #d8eaff;
+                    padding:20px;
+                    border-radius:8px;
+                    margin-top:30px;
+                ">
+                    <p style="
+                        margin:0;
+                        color:#357ABD;
+                        line-height:1.7;
+                    ">
+                        Unser Team antwortet normalerweise innerhalb von
+                        24 Stunden.
+                    </p>
+                </div>
+
+                <p style="
+                    margin-top:35px;
+                    line-height:1.8;
+                    color:#555;
+                ">
+                    Mit freundlichen Grüßen<br>
+                    <strong>Ihr Reinigungsteam</strong>
+                </p>
+
+            </div>
+
+            <div style="
+                background:#f5f7fa;
+                padding:18px;
+                text-align:center;
+                color:#888;
+                font-size:13px;
+            ">
+                © ${new Date().getFullYear()} Reinigungsservice
+            </div>
+
+        </div>
+    `;
+}
+
+/* ============================================================================
+   STYLES
+============================================================================ */
+
+const tdTitle = `
+    padding:14px;
+    width:220px;
+    font-weight:bold;
+    border-bottom:1px solid #eee;
+    background:#f8fafc;
+    color:#333;
+`;
+
+const tdValue = `
+    padding:14px;
+    border-bottom:1px solid #eee;
+    color:#555;
+`;
+
+/* ============================================================================
+   SERVICES FORMATTER
+============================================================================ */
+
+function formatServices(services = []) {
+
+    const map = {
         floor: 'Bodenreinigung',
         windows: 'Fensterreinigung',
         deep: 'Tiefenreinigung',
         kitchen: 'Küchenreinigung',
         bathroom: 'Badezimmerreinigung',
-        carpet: 'Teppichreinigung',
-        hypoallergenic: 'Hypoallergene Reinigungsmittel',
-        eco: 'Umweltfreundliche Produkte',
-        pet_friendly: 'Haustiere anwesend'
+        carpet: 'Teppichreinigung'
     };
 
-    return Array.isArray(services)
-        ? services.map(s => serviceNames[s] || s).join(', ')
-        : services;
-}
-
-function formatDate(dateString) {
-    try {
-        const date = new Date(dateString + 'T00:00:00');
-        return date.toLocaleDateString('de-DE', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    } catch (e) {
-        return dateString;
+    if (!Array.isArray(services)) {
+        services = [services];
     }
+
+    return services
+        .map(service => map[service] || service)
+        .join(', ');
 }
 
-function generateFormId() {
-    return `FORM-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-}
+/* ============================================================================
+   ROUTE
+============================================================================ */
+
+router.post('/', async (req, res) => {
+    try {
+        console.log('\n══════════════════════════════');
+        console.log('📥 NEW FORM REQUEST');
+        console.log('══════════════════════════════\n');
+
+        const data = req.body.data || req.body;
+
+        /* ============================
+           FORM TYPE
+        ============================ */
+
+        const formType = data.type || req.body.type || 'service';
+
+        console.log(`📨 Form type: ${formType}`);
+
+        /* ============================
+           COMMON VALIDATION
+        ============================ */
+
+        const errors = [];
+
+        const commonValidators = [
+            validateName(data.name, 'Vorname'),
+            validateName(data.lastname, 'Nachname'),
+            validateEmail(data.email)
+        ];
+
+        commonValidators.forEach(error => {
+            if (error) errors.push(error);
+        });
+
+        /* ============================
+           CONTACT FORM VALIDATION
+        ============================ */
+
+        if (formType === 'contact') {
+
+            if (data.message) {
+                const messageError = validateText(
+                    data.message,
+                    'Nachricht',
+                    2,
+                    2000
+                );
+
+                if (messageError) {
+                    errors.push(messageError);
+                }
+            }
+
+        }
+
+        /* ============================
+           SERVICE FORM VALIDATION
+        ============================ */
+
+        if (formType === 'service') {
+
+            const serviceValidators = [
+                validatePhone(data.phone),
+                validateText(data.street, 'Straße'),
+                validatePostalCode(data.postal_code),
+                validateText(data.city, 'Stadt'),
+                validateText(data.property_type, 'Immobilientyp'),
+                validateArray(data.services, 'Dienstleistungen')
+            ];
+
+            serviceValidators.forEach(error => {
+                if (error) errors.push(error);
+            });
+
+        }
+
+        /* ============================
+           VALIDATION ERRORS
+        ============================ */
+
+        if (errors.length > 0) {
+
+            console.log('❌ Validation failed');
+            console.log(errors);
+
+            return res.status(400).json({
+                success: false,
+                errors
+            });
+        }
+        /* ============================
+           EMAILS
+        ============================ */
+
+        const adminHtml = generateAdminEmail(data, formType);
+
+        await sendEmail(
+            process.env.ADMIN_EMAIL,
+            formType === 'contact'
+                ? 'Neue Kontaktanfrage'
+                : 'Neue Reinigungsanfrage',
+            adminHtml
+        );
+
+        const clientHtml = generateClientEmail(data, formType);
+
+        await sendEmail(
+            data.email,
+            'Vielen Dank für Ihre Anfrage',
+            clientHtml
+        );
+
+        /* ============================
+           SUCCESS
+        ============================ */
+
+        console.log('✅ Form processed successfully\n');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Form submitted successfully'
+        });
+
+    } catch (error) {
+        console.error('\n❌ FORM ERROR:\n');
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            details:
+                process.env.NODE_ENV === 'development'
+                    ? error.message
+                    : undefined
+        });
+    }
+});
 
 export default router;
