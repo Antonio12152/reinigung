@@ -22,16 +22,6 @@ const components = [
     //     path: 'components/booking-calendar.html',
     //     callback: initBooking
     // },
-    {
-        id: 'contact-form',
-        path: 'components/contact-form.html',
-        callback: initForms  
-    },
-    {
-        id: 'service-form',
-        path: 'components/service-form.html',
-        callback: initForms 
-    }
 ];
 
 function toggleTheme() {

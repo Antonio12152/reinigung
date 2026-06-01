@@ -2,36 +2,249 @@
 <html lang="de">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Termin buchen</title>
+    <meta name="description" content="Termin buchen - Professionelle Reinigung Berlin. Kostenlose und unverbindliche Anfrage stellen.">
+    <meta name="keywords" content="Termin buchen, Reinigung anfragen, Wohnungsreinigung buchen">
+    
+    <title>Termin buchen - Professionelle Reinigung Berlin</title>
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/style.css">
-
+    <link rel="stylesheet" href="css/service-form.css">
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
 </head>
 
 <body>
 
-    <header id="header"></header>
+    <div class="page-wrapper">
+        <header id="header"></header>
 
-    <main class="container py-5">
-        <!--<section id="booking-calendar"></section>-->
+        <section class="hero-section text-white d-flex align-items-center" style="min-height: 300px;">
+            <div class="container text-center">
+                <h1 class="display-5 fw-bold">
+                    Termin buchen
+                </h1>
+                <p class="lead mt-3">
+                    Kostenlose und unverbindliche Anfrage stellen - Sie erhalten innerhalb 24h eine Rückmeldung
+                </p>
+            </div>
+        </section>
 
-        <section id="service-form"></section>
-    </main>
+        <main class="container py-5">
+            <section id="service-form">
+                <form class="container-form custom-form" data-form-type="service" id="bookingForm">
 
-    <footer id="footer"></footer>
+                    <!-- Kontaktinformationen -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-person-circle"></i>
+                            Kontaktinformationen
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Vorname <span style="color: var(--danger);">*</span></label>
+                                <input type="text" name="name" class="form-control" placeholder="z.B. Max" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nachname <span style="color: var(--danger);">*</span></label>
+                                <input type="text" name="lastname" class="form-control" placeholder="z.B. Müller" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">E-Mail <span style="color: var(--danger);">*</span></label>
+                                <input type="email" name="email" class="form-control" placeholder="max.mueller@example.com" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telefonnummer <span style="color: var(--danger);">*</span></label>
+                                <input type="tel" name="phone" class="form-control" placeholder="+49 30 123456789" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adressinformationen -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-geo-alt"></i>
+                            Adressinformationen
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Straße und Hausnummer <span style="color: var(--danger);">*</span></label>
+                                <input type="text" name="street" class="form-control" placeholder="z.B. Hauptstraße 42" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Stadt <span style="color: var(--danger);">*</span></label>
+                                <input type="text" name="city" class="form-control" placeholder="z.B. Berlin" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Postleitzahl <span style="color: var(--danger);">*</span></label>
+                                <input type="text" name="postal_code" class="form-control" placeholder="z.B. 10115" pattern="\d{5}" maxlength="5" required>
+                                <small class="form-text text-muted">5-stellige deutsche Postleitzahl</small>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Wohnungstyp <span style="color: var(--danger);">*</span></label>
+                            <div class="radio-group">
+                                <div class="radio-item">
+                                    <input type="radio" name="property_type" id="apartment" value="apartment" required>
+                                    <label for="apartment">
+                                        <i class="bi bi-building"></i> Wohnung / Apartment
+                                    </label>
+                                </div>
+                                <div class="radio-item">
+                                    <input type="radio" name="property_type" id="house" value="house">
+                                    <label for="house">
+                                        <i class="bi bi-house"></i> Haus
+                                    </label>
+                                </div>
+                                <div class="radio-item">
+                                    <input type="radio" name="property_type" id="office" value="office">
+                                    <label for="office">
+                                        <i class="bi bi-building-check"></i> Büro / Gewerbefläche
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reinigungsdetails -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-brush"></i>
+                            Reinigungsdetails
+                        </div>
+
+                        <label class="form-label" style="margin-top: 20px;">Welche Services interessieren Sie? <span style="color: var(--danger);">*</span></label>
+                        <div class="services-grid mb-4">
+                            <div class="service-card">
+                                <input type="checkbox" name="services" value="floor" id="service-floor" class="service-checkbox">
+                                <label for="service-floor">
+                                    <i class="bi bi-brush-all"></i>
+                                    <div class="service-name">Bodenreinigung</div>
+                                    <small>Professionelle Bodenbearbeitung</small>
+                                </label>
+                            </div>
+
+                            <div class="service-card">
+                                <input type="checkbox" name="services" value="windows" id="service-windows" class="service-checkbox">
+                                <label for="service-windows">
+                                    <i class="bi bi-border-all"></i>
+                                    <div class="service-name">Fensterreinigung</div>
+                                    <small>Streifenfreie saubere Fenster</small>
+                                </label>
+                            </div>
+
+                            <div class="service-card">
+                                <input type="checkbox" name="services" value="deep" id="service-deep" class="service-checkbox">
+                                <label for="service-deep">
+                                    <i class="bi bi-stars"></i>
+                                    <div class="service-name">Tiefenreinigung</div>
+                                    <small>Umfassende gründliche Reinigung</small>
+                                </label>
+                            </div>
+
+                            <div class="service-card">
+                                <input type="checkbox" name="services" value="kitchen" id="service-kitchen" class="service-checkbox">
+                                <label for="service-kitchen">
+                                    <i class="bi bi-fire"></i>
+                                    <div class="service-name">Küchenreinigung</div>
+                                    <small>Entfettung und Desinfektion</small>
+                                </label>
+                            </div>
+
+                            <div class="service-card">
+                                <input type="checkbox" name="services" value="bathroom" id="service-bathroom" class="service-checkbox">
+                                <label for="service-bathroom">
+                                    <i class="bi bi-droplet"></i>
+                                    <div class="service-name">Badezimmerreinigung</div>
+                                    <small>Fliesen und Armaturen</small>
+                                </label>
+                            </div>
+
+                            <div class="service-card">
+                                <input type="checkbox" name="services" value="carpet" id="service-carpet" class="service-checkbox">
+                                <label for="service-carpet">
+                                    <i class="bi bi-layers"></i>
+                                    <div class="service-name">Teppichreinigung</div>
+                                    <small>Intensive Polsterreinigung</small>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Zusätzliche Informationen -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="bi bi-pencil-square"></i>
+                            Zusätzliche Informationen
+                        </div>
+
+                        <label class="form-label">Weitere Anforderungen oder Besonderheiten</label>
+                        <textarea name="details" class="form-control mb-3" rows="4" placeholder="Beschreiben Sie hier spezielle Anforderungen, besondere Bereiche die gereinigt werden sollen, oder andere wichtige Informationen..."></textarea>
+
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="terms" id="terms" required>
+                                <label for="terms">Ich akzeptiere die Datenschutzerklärung und Nutzungsbedingungen</label>
+                            </div>
+                        </div>
+
+                        <p class="required-note">Alle mit <span style="color: var(--danger);">*</span> gekennzeichneten Felder sind erforderlich</p>
+                    </div>
+
+                    <!-- Nachricht/Feedback -->
+                    <div class="form-feedback mb-3" id="formFeedback"></div>
+
+                    <!-- Buttons -->
+                    <div class="form-footer">
+                        <button type="reset" class="btn btn-secondary btn-sub">
+                            <i class="bi bi-arrow-clockwise"></i> Zurücksetzen
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-sub">
+                            <i class="bi bi-check-circle"></i> Kostenlose Anfrage stellen
+                        </button>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="benefits">
+                        <div class="benefit-item">
+                            <i class="bi bi-check-circle"></i>
+                            Kostenlos
+                        </div>
+                        <div class="benefit-item">
+                            <i class="bi bi-check-circle"></i>
+                            Unverbindlich
+                        </div>
+                        <div class="benefit-item">
+                            <i class="bi bi-check-circle"></i>
+                            Innerhalb 24h Rückmeldung
+                        </div>
+                    </div>
+
+                </form>
+            </section>
+        </main>
+
+        <footer id="footer"></footer>
+    </div>
     <div id="cookie-banner"></div>
 
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-    <!-- <script src="js/booking.js"></script> -->
     <script type="module" src="js/index.js"></script>
+
+
 </body>
 
 </html>

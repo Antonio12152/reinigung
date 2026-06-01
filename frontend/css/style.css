@@ -281,7 +281,6 @@ header {
     color: var(--text-primary);
 }
 
-/* Services Grid (для service-form) */
 .services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

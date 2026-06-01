@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
-    <script type="module" src="js/index.js"></script>
+    <!-- <link rel="stylesheet" href="css/service-form.css"> -->
 
 </head>
 
@@ -42,7 +42,25 @@
 
                         </p>
 
-                        <div id="contact-form"></div>
+                        <form class="custom-form" data-form-type="contact">
+
+                            <input type="text" name="name" class="form-control mb-3" placeholder="Vorname" required>
+                            <input type="text" name="lastname" class="form-control mb-3" placeholder="Nachname"
+                                required>
+                            <input type="email" name="email" class="form-control mb-3" placeholder="Email" required>
+
+                            <textarea name="message" class="form-control mb-3" rows="5"
+                                placeholder="Nachricht"></textarea>
+
+                            <div class="form-feedback"></div>
+
+                            <button class="btn btn-primary w-100">
+
+                                Nachricht senden
+
+                            </button>
+
+                        </form>
 
                     </div>
 
@@ -60,7 +78,7 @@
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
     <script type="module" src="js/index.js"></script>
-    
+
 </body>
 
 </html>
