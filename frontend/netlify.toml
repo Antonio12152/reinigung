@@ -1,0 +1,7 @@
+[build]
+  publish = "."
+  command = "node generate-env.js"
+
+[context.production.environment]
+  # Add your Netlify build environment variables here.
+  # example: API_URL = "https://your-backend.example.com"

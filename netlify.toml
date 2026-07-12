@@ -1,9 +1,0 @@
-[build]
-  base = "."
-  publish = "frontend"
-  command = "node scripts/generate-env.js"
-
-[context.production.environment]
-  # Define default production environment variables here if needed
-  # example:
-  # API_URL = "https://your-backend.example.com"
