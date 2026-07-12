@@ -1,4 +1,7 @@
-const API_URL = env.API_URL || 'http://localhost:3000/forms';
+const API_URL = (() => {
+    const baseUrl = window.ENV?.API_URL?.replace(/\/+$/, '') || 'http://localhost:3000';
+    return `${baseUrl}/forms`;
+})();
 
 console.log('📋 Forms.js loaded');
 /*
