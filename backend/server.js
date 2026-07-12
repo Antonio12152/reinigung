@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import formsRouter from './routes/forms.js';
 
 dotenv.config();
@@ -8,21 +10,51 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
 // Middleware для обработки JSON и форм
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Sicherheits-Header setzen
+app.use(helmet());
 
 // CORS конфигурация
 app.use(cors({
     origin: [
         'http://127.0.0.1:5500',
         'http://localhost:5500',
-        'http://localhost:5173'
+        'http://localhost:5173',
+        'https://v-reinigung.netlify.app'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type']
 }));
+
+// Simple request validation for allowed content types
+app.use((req, res, next) => {
+    if (['POST', 'PUT'].includes(req.method)) {
+        const contentType = req.get('content-type') || '';
+        if (!contentType.includes('application/json') && !contentType.includes('application/x-www-form-urlencoded')) {
+            return res.status(415).json({
+                error: 'Unsupported media type'
+            });
+        }
+    }
+    next();
+});
+
+const formLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Zu viele Anfragen. Bitte versuchen Sie es in einigen Minuten erneut.'
+    }
+});
 
 // test replace with normal later
 // const bookedSlots = new Map();
@@ -49,19 +81,23 @@ app.use(cors({
 
 app.use((req, res, next) => {
     console.log(`\n${new Date().toISOString()} ${req.method} ${req.path}`);
-    console.log(`Content-Type: ${req.get('content-type')}`);
 
-    if (['POST', 'PUT'].includes(req.method)) {
-        console.log(`Body размер: ${JSON.stringify(req.body).length} bytes`);
+    if (process.env.NODE_ENV === 'development' && ['POST', 'PUT'].includes(req.method)) {
+        console.log(`Content-Type: ${req.get('content-type')}`);
+        console.log(`Body size: ${JSON.stringify(req.body).length} bytes`);
         console.log('Body:', JSON.stringify(req.body, null, 2));
     }
 
     next();
 });
 
-app.use(express.static('public'));
+app.use(express.static('public', {
+    dotfiles: 'ignore',
+    index: false,
+    maxAge: '1d'
+}));
 
-app.use('/forms', formsRouter); 
+app.use('/forms', formLimiter, formsRouter);
 
 app.get('/health', (req, res) => {
     res.json({
