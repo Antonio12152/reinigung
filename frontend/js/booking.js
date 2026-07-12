@@ -193,7 +193,6 @@ function handleTimeSlotClick(hour, timeStr, slot) {
         return;
     }
 
-    // Если попытались выбрать время раньше selectedTimeFrom
     if (hour <= selectedTimeFrom) {
         resetTimeSelection();
         selectTimeFrom(hour, timeStr, slot);
@@ -217,7 +216,7 @@ async function renderTimeSlots() {
         `<i class="bi bi-calendar-event"></i> <span>${dateStr}</span>`;
 
     const dateFormatted = selectedDate.toISOString().split('T')[0];
-    const baseUrl = window.ENV?.API_URL?.replace(/\/+$/, '') || 'http://localhost:3000';
+    const baseUrl = window.ENV?.API_URL?.replace(/\/+$/, '') || 'https://reinigung-two.vercel.app';
     const bookedSlotsUrl = `${baseUrl}/booked-slots?date=${dateFormatted}`;
 
     try {

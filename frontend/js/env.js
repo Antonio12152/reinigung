@@ -1,3 +1,3 @@
 window.ENV = window.ENV || {
-    API_URL: 'http://localhost:3000'
+    API_URL: 'https://reinigung-two.vercel.app'
 };

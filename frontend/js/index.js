@@ -1,6 +1,5 @@
 'use strict';
 import { loadCookieBanner } from './cookie.js';
-import { initBooking } from './booking.js';
 import { initForms } from './forms.js';
 
 const components = [
@@ -79,6 +78,10 @@ const init = async () => {
     }
 
     loadCookieBanner();
+
+    if (document.querySelector('.custom-form')) {
+        initForms();
+    }
 
     if (typeof AOS !== 'undefined') {
         AOS.init({

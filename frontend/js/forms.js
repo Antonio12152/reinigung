@@ -1,23 +1,9 @@
 const API_URL = (() => {
-    const baseUrl = window.ENV?.API_URL?.replace(/\/+$/, '') || 'http://localhost:3000';
+    const baseUrl = window.ENV?.API_URL?.replace(/\/+$/, '') || 'https://reinigung-two.vercel.app';
     return `${baseUrl}/forms`;
 })();
 
 console.log('📋 Forms.js loaded');
-/*
-let bookingData = {
-    date: null,
-    timeFrom: null,
-    timeTo: null,
-    duration: null
-};
-
-document.addEventListener('bookingTimeSelected', (e) => {
-    bookingData = e.detail;
-    console.log('📅 Booking data updated:', bookingData);
-    showServiceForm();
-});
-*/
 
 function initForms() {
     console.log('🔧 Initializing forms...');
@@ -39,7 +25,6 @@ function initForms() {
 function addRealtimeValidation(form) {
     const formType = form.dataset.formType;
 
-    // Общие поля для всех форм
     const nameInput = form.querySelector('input[name="name"]');
     const lastnameInput = form.querySelector('input[name="lastname"]');
     const emailInput = form.querySelector('input[name="email"]');
@@ -100,11 +85,6 @@ function addRealtimeValidation(form) {
         }
     }
 
-    /*
-if (!bookingData.date || bookingData.timeFrom === null || bookingData.timeTo === null) {
-    errors.push('❌ Bitte wählen Sie ein Datum und eine Uhrzeit');
-}
-*/
 }
 
 function showFieldError(field, error) {
@@ -277,19 +257,7 @@ async function handleFormSubmit(e) {
 
     console.log('✅ Validation passed');
     console.log('📤 Sending data to server:', JSON.stringify({ type: formType, data }, null, 2));
-    /*
-    if (formType === 'service') {
-        data = {
-            ...data,
-            booking: {
-                date: bookingData.date,
-                timeFrom: bookingData.timeFrom,
-                timeTo: bookingData.timeTo,
-                duration: bookingData.duration
-            }
-        };
-    }
-    */
+
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -470,7 +438,4 @@ console.log('📋 Forms.js ready for import');
 export {
     initForms,
     handleFormSubmit,
-    // bookingData,
-    // getBookingData, 
-    // showServiceForm,
 };
