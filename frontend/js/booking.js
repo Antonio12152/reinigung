@@ -217,8 +217,11 @@ async function renderTimeSlots() {
         `<i class="bi bi-calendar-event"></i> <span>${dateStr}</span>`;
 
     const dateFormatted = selectedDate.toISOString().split('T')[0];
+    const baseUrl = window.ENV?.API_URL?.replace(/\/+$/, '') || 'http://localhost:3000';
+    const bookedSlotsUrl = `${baseUrl}/booked-slots?date=${dateFormatted}`;
+
     try {
-        const response = await fetch(`http://localhost:3000/booked-slots?date=${dateFormatted}`);
+        const response = await fetch(bookedSlotsUrl);
         if (response.ok) {
             const data = await response.json();
             window.bookedHours = data.bookedHours || [];
