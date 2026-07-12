@@ -13,10 +13,6 @@ const components = [
         id: 'footer',
         path: 'components/footer.html'
     },
-    {
-        id: 'cookie-banner',
-        path: 'components/cookie-banner.html'
-    },
     // {
     //     id: 'booking-calendar',
     //     path: 'components/booking-calendar.html',

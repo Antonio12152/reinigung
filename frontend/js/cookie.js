@@ -1,27 +1,32 @@
 function initCookieBanner() {
-    const cookieBanner = document.getElementById('cookie-banner');
-    const acceptCookies = document.getElementById('acceptCookies');
-    const declineCookies = document.getElementById('declineCookies');
-
-    if (!cookieBanner || !acceptCookies || !declineCookies) {
-        console.error("Components for cookie banner not found in HTML. Please check IDs in cookie-banner.html");
+    const cookieBannerContainer = document.getElementById('cookie-banner');
+    if (!cookieBannerContainer) {
+        console.error('Cookie banner container not found');
         return;
     }
 
-    if (!localStorage.getItem('cookieChoice')) {
-        cookieBanner.style.display = 'block';
-    } else {
-        cookieBanner.style.display = 'none';
+    const cookieBanner = cookieBannerContainer.querySelector('.cookie-banner');
+    const acceptCookies = cookieBannerContainer.querySelector('#acceptCookies');
+    const declineCookies = cookieBannerContainer.querySelector('#declineCookies');
+
+    if (!cookieBanner || !acceptCookies || !declineCookies) {
+        console.error('Cookie banner elements not found');
+        return;
+    }
+
+    const cookieChoice = localStorage.getItem('cookieChoice');
+    if (!cookieChoice) {
+        cookieBanner.classList.add('show');
     }
 
     acceptCookies.addEventListener('click', () => {
         localStorage.setItem('cookieChoice', 'accepted');
-        cookieBanner.style.display = 'none';
+        cookieBanner.classList.remove('show');
     });
 
     declineCookies.addEventListener('click', () => {
         localStorage.setItem('cookieChoice', 'declined');
-        cookieBanner.style.display = 'none';
+        cookieBanner.classList.remove('show');
     });
 }
 
@@ -29,7 +34,7 @@ export function loadCookieBanner() {
     return fetch('components/cookie-banner.html')
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Файл не найден! Статус: ${response.status}`);
+                throw new Error(`Datei nicht gefunden. Status: ${response.status}`);
             }
             return response.text();
         })
@@ -40,5 +45,5 @@ export function loadCookieBanner() {
                 initCookieBanner();
             }
         })
-        .catch(err => console.error("Error loading cookie banner:", err));
+        .catch(err => console.error('Fehler beim Laden des Cookie-Banners:', err));
 }
