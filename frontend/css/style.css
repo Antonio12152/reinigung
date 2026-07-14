@@ -24,8 +24,8 @@
     --bg-secondary: #f9fafb;
     --bg-tertiary: #f3f4f6;
     --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
+    --text-secondary: #111827;
+    --text-muted: #111827;
     --border-color: #e5e7eb;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -135,13 +135,44 @@ header {
 .hero-section {
     height: 500px;
     background:
-        linear-gradient(rgba(0, 0, 0, 0.6),
-            rgba(0, 0, 0, 0.6)),
+        linear-gradient(rgba(255, 255, 255, 0.15),
+            rgba(255, 255, 255, 0.15)),
         url("../img/window.jpg");
     background-size: cover;
     background-position: center;
     padding: 100px 20px;
     margin-bottom: 50px;
+}
+
+.dark-theme .hero-section {
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.75),
+            rgba(0, 0, 0, 0.75)),
+        url("../img/window.jpg");
+}
+
+.hero-section .btn-light {
+    background-color: #f8fafc;
+    color: var(--primary-dark);
+    border-color: #f8fafc;
+}
+
+.dark-theme .hero-section .btn-light {
+    background-color: #e5e7eb;
+    color: #111827;
+    border-color: #e5e7eb;
+}
+
+.hero-section .btn-light:hover {
+    background-color: #e2e8f0;
+    color: var(--primary-dark);
+    border-color: #e2e8f0;
+}
+
+.dark-theme .hero-section .btn-light:hover {
+    background-color: #d1d5db;
+    color: #111827;
+    border-color: #d1d5db;
 }
 
 /* ==================== CARDS ==================== */
@@ -169,7 +200,7 @@ header {
 }
 
 .card-text {
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 /* ==================== PRICING CARD ==================== */
